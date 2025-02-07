@@ -32,6 +32,13 @@
             <version>8.0.31</version>
         </dependency>
 
+        <!-- 导入 log4j 日志库 -->
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.17</version>
+        </dependency>
+
     </dependencies>
 
 

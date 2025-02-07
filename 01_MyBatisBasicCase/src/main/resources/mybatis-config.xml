@@ -4,10 +4,68 @@
         "https://mybatis.org/dtd/mybatis-3-config.dtd">
 <configuration>
 
-    <environments default="test">
+    <!--
+        MyBatis核心配置文件中的标签必须要按照指定的顺序配置：
+        properties?,settings?,typeAliases?,typeHandlers?,
+        objectFactory?,objectWrapperFactory?,reflectorFactory?,
+        plugins?,environments?,databaseIdProvider?,mappers?
+    -->
 
+    <!--
+        导入 jdbc.properties 配置文件，后续可以在当前文件使用使用 ${key} 的方式读取配置数据
+    -->
+    <properties resource="jdbc.properties"/>
+
+    <!--
+        typeAliases 配置类型别名，即为某个具体的类型配置一个别名
+        在 Mybatis 的范围内，可以使用该别名表示一个具体的类型
+    -->
+    <typeAliases>
+        <!--
+            typeAlias 标签配置某一个具体类型的别名
+            type: 需要配置别名的具体类型
+            alias: 设置某个具体类型的别名
+
+            注意: 若不配置 alias 别名，则当前类型会有一个默认的别名，即类名且不区分大小写
+        -->
+        <!--        <typeAlias type="com.example.pojo.UserDTO" alias="abc"/>-->
+        <typeAlias type="com.example.pojo.UserDTO"/>
+
+        <!--
+            package 标签配置某个包下所有类的别名，所有类都拥有一个默认的别名，即类名且不区分大小写
+        -->
+        <package name="com.example.pojo"/>
+    </typeAliases>
+
+    <!--
+        environments 标签配置连接数据库的环境
+        default 属性配置默认使用的环境 ( 取值为 environment 的 id 值 )
+    -->
+    <environments default="development">
+
+        <!--
+            environment 标签配置一个具体的连接数据库环境，environment 可以配置多个
+            id 属性配置当前环境的唯一标识，不能重复
+        -->
         <environment id="test">
+
+            <!--
+                transactionManager 标签配置事务管理器
+                type 属性配置数据源类型
+                type="JDBC|MANAGED"
+                JDBC: 表示使用 JDBC 中原生的事务管理方式
+                MANAGED: 表示被管理，例如 spring
+            -->
             <transactionManager type="JDBC"/>
+
+            <!--
+                dataSource 标签配置数据源
+                属性 type 配置数据源的类型
+                type="POOLED|UNPOOLED|JNDI"
+                POOLED: 表示使用数据库连接池
+                UNPOOLED: 表示不使用数据库连接池
+                JNDI: 表示使用上下文中的数据源
+            -->
             <dataSource type="POOLED">
                 <property name="driver" value="com.mysql.cj.jdbc.Driver"/>
                 <property name="url" value="jdbc:mysql://localhost:3306/ssm?serverTimezone=UTC"/>
@@ -16,10 +74,38 @@
             </dataSource>
         </environment>
 
+        <environment id="development">
+            <transactionManager type="JDBC"/>
+            <dataSource type="POOLED">
+                <!--
+                    使用 ${key} 的方式读取 jdbc.properties 配置文件中的属性值
+                -->
+                <property name="driver" value="${jdbc.driver}"/>
+                <property name="url" value="${jdbc.url}"/>
+                <property name="username" value="${jdbc.username}"/>
+                <property name="password" value="${jdbc.password}"/>
+            </dataSource>
+        </environment>
+
     </environments>
 
+    <!--
+        mappers 标签用于引入 mybatis 的映射文件
+    -->
     <mappers>
-        <mapper resource="mappers/UserMapper.xml"/>
+        <!--
+            mapper 标签用于引入单个 mybatis 映射文件
+        -->
+        <!--        <mapper resource="mappers/UserMapper.xml"/>-->
+
+        <!--
+            package 标签以包的方式批量引入 mybatis 映射文件，当时必须满足两个条件:
+            1. mapper 接口和映射文件的包目录需要保持一致
+            2. mapper 接口的名字和映射文件的名字必须一致
+
+            resources 下创建多个目录可以使用 com/example/mapper 方式创建三个嵌套的目录
+        -->
+        <package name="com.example.mapper"/>
     </mappers>
 
 </configuration>
