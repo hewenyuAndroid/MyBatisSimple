@@ -308,3 +308,115 @@ log4j 的配置文件名为 `log4j.xml`，存放在 `src/main/resources/` 目录
 
 
 
+
+
+## MyBatis 获取参数值的两种方式
+
+mybatis 获取参数值的两种方式: `${}` 和 `#{}`
+
+- `${}` 的本质是字符串拼接，若为字符串类型或日期类型的字段进行赋值时，需要手动加单引号;
+- `#{}` 的本质是占位符赋值，此时为字符串类型或日期类型的字段进行赋值时，可以自动添加单引号;
+
+```text
+// 使用 #{} 为占位符赋值
+select * from t_user where username = #{username}
+
+// 使用 ${} 为字符串拼接，如果参数是字符串，需要手动添加单引号
+select * from t_user where username = '${username}'
+```
+
+mybatis 中使用最多的是通过设置实体类参数 以及使用 `@Param` 注解指定参数名称的方式传递参数
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.mapper.UserParamMapper">
+
+    <!-- mybatis 参数使用 -->
+
+    <!-- UserDTO queryUserById(Integer id); -->
+    <select id="queryUserById" resultType="UserDTO">
+        <!--
+            mybatis 获取参数有两种方式 ${} 和 #{}
+            #{} 的本质是占位符赋值
+            ${} 的本质是字符串拼接，需要注意如果 ${} 传入的是字符串或者日期类型，需要手动添加单引号
+
+            若 mapper 接口方法的参数为单个字面量类型，此时可以通过 ${} 和 #{} 以任意的内容获取参数值 ( 例如: #{abc} )
+        -->
+        <!--        select * from t_user where id = #{id}-->
+        select * from t_user where id = ${id}
+    </select>
+
+    <!-- UserDTO queryUserByUsername(String username); -->
+    <select id="queryUserByUsername" resultType="UserDTO">
+        <!--        select * from t_user where username = #{username}-->
+        <!-- username 为字符串类型，使用 ${} 接收参数时，需要手动添加单引号 -->
+        select * from t_user where username = '${username}'
+    </select>
+
+    <!-- UserDTO checkLogin(String username, String password) -->
+    <select id="checkLogin" resultType="UserDTO">
+        <!--
+            Cause: org.apache.ibatis.binding.BindingException: Parameter 'username' not found.
+            Available parameters are [arg1, arg0, param1, param2]
+
+            若 mapper 接口方法的参数为多个的字面量类型，此时 mybatis 会将参数放入 map 集合中，以两种方式存储
+            1. 以 arg0, arg1, .... 方式存储
+            2. 以 param1, param2, ... 方式存储
+        -->
+        <!--        select * from t_user where username = #{arg0} and password = #{arg1}-->
+        select * from t_user where username = '${param1}' and password = '${param2}'
+    </select>
+
+    <!-- UserDTO checkLoginByMap(Map<String, Object> map); -->
+    <select id="checkLoginByMap" resultType="UserDTO">
+        <!--
+            若 mapper 接口方法的参数为map结合类型的实体
+            只需要通过 #{} 或 ${} 访问 map 集合的键
+        -->
+        select * from t_user where username = #{username} and password = #{password}
+    </select>
+
+    <!-- Integer insertUser(UserDTO user); -->
+    <select id="insertUser">
+        <!--
+            若 mapper 接口方法的参数为实体类型的参数，只需要通过 #{} 或 ${} 访问实体类中的属性名即可
+            属性名规则: public String getUsername() {} 方法得到属性名 username，即实体中存在 getXxx() 方法即可
+
+            注意: 返回值类型使用 Integer ，而不是 int，范围的值为 null 使用 int 接收会报错
+        -->
+        insert into t_user values(null, #{username}, #{password}, #{age}, #{gender}, #{email})
+    </select>
+
+    <!-- UserDTO checkLoginByParam(@Param("username") String username, @Param("password") String password); -->
+    <select id="checkLoginByParam" resultType="UserDTO">
+        <!--
+            可以在 mapper 接口方法的参数上设置 @Param 注解，此时 mybatis 会将这些参数存储到 map 中，有两种存储方式
+            1. 以 @Param 注解的 value 值为键存储
+            2. 以 param1, param2, ... 为键存储
+            使用 #{} 或 ${} 读取对应的key即可
+        -->
+        <!--        select * from t_user where username=#{param1} and password=#{param2}-->
+        select * from t_user where username=#{username} and password=#{password}
+    </select>
+
+</mapper>
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
