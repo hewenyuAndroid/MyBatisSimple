@@ -238,6 +238,18 @@ CREATE TABLE `ssm`.`t_user`( `id` INT NOT NULL AUTO_INCREMENT, `username` TEXT, 
         insert into t_user values(null, "admin", "123456", 20, "男", "admin@126.com")
     </insert>
 
+   <!--
+       注意: 如果未在 mybatis-config.xml 文件中为 UserDTO 类配置别名，
+       则 resultType 中需要配置 UserDTO 的全类名，即: com.example.pojo.UserDTO
+      
+       select 查询的标签必须设置属性 resultType 或 resultMap，用于设置实体类和数据库表的映射关系
+       resultType: 自动映射，用于属性名和表中字段名一致的情况;
+       resultMap: 自定义映射，用于一对多，多对一 或 字段名和属性名不一致的情况
+    -->
+   <select id="queryUser" resultType="UserDTO">
+      select * from t_user where id = 4
+   </select>
+
 </mapper>
 ```
 
