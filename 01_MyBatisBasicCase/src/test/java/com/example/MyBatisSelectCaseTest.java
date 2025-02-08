@@ -65,4 +65,31 @@ public class MyBatisSelectCaseTest {
         sqlSession.close();
     }
 
+    @Test
+    public void testQueryUsernameLike() {
+        SqlSession sqlSession = SqlSessionUtil.openSqlSession();
+        SelectMapper mapper = sqlSession.getMapper(SelectMapper.class);
+        List<UserDTO> list = mapper.queryUsernameLike("admin");
+        System.out.println("MyBatisSelectCaseTest: testQueryUsernameLike(), list=" + list);
+        sqlSession.close();
+    }
+
+    @Test
+    public void testBatchDeleteByIds() {
+        SqlSession sqlSession = SqlSessionUtil.openSqlSession();
+        SelectMapper mapper = sqlSession.getMapper(SelectMapper.class);
+        Integer result = mapper.batchDeleteByIds("8,9,10");
+        System.out.println("MyBatisSelectCaseTest: testBatchDeleteByIds(), result=" + result);
+        sqlSession.close();
+    }
+
+    @Test
+    public void queryUserByIdFromTable() {
+        SqlSession sqlSession = SqlSessionUtil.openSqlSession();
+        SelectMapper mapper = sqlSession.getMapper(SelectMapper.class);
+        UserDTO user = mapper.queryUserByIdFromTable("t_user", 1);
+        System.out.println("MyBatisSelectCaseTest: queryUserByIdFromTable(), user=" + user);
+        sqlSession.close();
+    }
+
 }

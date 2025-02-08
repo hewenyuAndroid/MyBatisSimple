@@ -516,3 +516,47 @@ mybatis 中，除了将一条数据映射为一个实体对象外，还可以将
 ```
 
 
+## 特殊SQL执行
+
+### 模糊查询
+
+```xml
+<!-- List<UserDTO> queryUsernameLike(@Param("keyword") String keyword); -->
+<select id="queryUsernameLike" resultType="UserDTO">
+  <!-- 方案1: 使用 ${} 方式，拼接字符串 -->
+  <!--        select * from t_user where username like '%${keyword}%'-->
+  <!-- 方案2: 使用 concat 拼接字符串，参数使用 #{占位符} -->
+  <!--        select * from t_user where username like concat('%', #{keyword}, '%')-->
+  <!-- 方案3: 使用 "%"#{keyword}"%" 方式 -->
+  select * from t_user where username like "%"#{keyword}"%"
+</select>
+```
+
+### 批量删除
+
+```xml
+<!-- Integer batchDeleteByIds(@Param("ids") String ids); -->
+<select id="batchDeleteByIds" resultType="int">
+  <!--
+      注意，在sql拼接时，如果使用 #{} 方式会默认为字符串添加 '' 单引号，例如下面的sql会得到
+      delete from t_user where id in('1,2')   // 错误
+      若使用 ${} 方式拼接，得到如下sql
+      delete from t_user where id in(1,2)
+  -->
+  delete from t_user where id in(${ids})
+</select>
+```
+
+### 动态设置表名
+
+```xml
+<!-- UserDTO queryUserByIdFromTable(@Param("tableName") String tableName, @Param("id") Integer id); -->
+<select id="queryUserByIdFromTable" resultType="UserDTO">
+  <!-- 注意，这里的表名通过参数动态的设置，如果使用 #{} 占位符方式，会使表名增加单引号 -->
+  select * from ${tableName} where id = #{id}
+</select>
+```
+
+
+
+

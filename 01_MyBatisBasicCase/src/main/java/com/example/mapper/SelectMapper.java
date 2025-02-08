@@ -35,4 +35,13 @@ public interface SelectMapper {
     @MapKey("id")
     Map<String, Map<String, Object>> queryAllUserToKeyMap();
 
+    /** 查询名字中包含 keyword 关键字的用户 */
+    List<UserDTO> queryUsernameLike(@Param("keyword") String keyword);
+
+    /** 根据id列表批量删除数据 */
+    Integer batchDeleteByIds(@Param("ids") String ids);
+
+    /** 动态的从 tableName 表中查询数据 */
+    UserDTO queryUserByIdFromTable(@Param("tableName") String tableName, @Param("id") Integer id);
+
 }
