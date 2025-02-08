@@ -302,14 +302,6 @@ public void testInsert() throws IOException {
 log4j 的配置文件名为 `log4j.xml`，存放在 `src/main/resources/` 目录下
 
 
-
-
-
-
-
-
-
-
 ## MyBatis 获取参数值的两种方式
 
 mybatis 获取参数值的两种方式: `${}` 和 `#{}`
@@ -418,5 +410,109 @@ mybatis 中使用最多的是通过设置实体类参数 以及使用 `@Param` �
 
 
 
+
+
+
+
+
+## MyBatis 常用的查询方式
+
+### 查询一个实体类对象
+
+若 sql 语句查询的结果为多条时，一定不能以实体类类型作为方法的返回值，否则会抛出异常 ( `TooManyResultsException` )，若 sql 语句查询的结果为 1 条时，此时可以使用实体类类型或 list 集合类型作为方法的返回值。
+
+```xml
+<!-- UserDTO queryUserById(@Param("id") Integer id); -->
+<select id="queryUserById" resultType="UserDTO">
+  select * from t_user where id = #{id}
+</select>
+
+<!-- List<UserDTO> queryAllUser(); -->
+<select id="queryAllUser" resultType="UserDTO">
+  select * from t_user
+</select>
+```
+
+### 查询单个数据
+
+在 mybatis 中对于 Java 中常用的类型都设置了类型别名，详见文档 https://mybatis.org/mybatis-3/zh_CN/configuration.html
+
+```text
+别名             类型
+_byte           byte
+_int            int
+_integer        int
+_double         double
+_float          float
+_boolean        boolean
+string          String
+byte            Byte
+int             Integer
+integer         Integer
+double          Double
+float           Float
+boolean         Boolean
+date            Date
+object          Object
+date[]          Date[]
+object[]        Object[]
+map             Map
+hashmap         HashMap
+list            List
+arraylist       ArrayList
+```
+
+查询表中的数据量
+
+```xml
+<!-- Integer queryUserCount(); -->
+<select id="queryUserCount" resultType="integer">
+  <!--
+      查询的结果为 Integer 类型，mybatis 中 Integer 类型的类型别名为 int 或 integer
+  -->
+  select count(*) from t_user
+</select>
+```
+
+### 查询数据封装到 Map 集合中
+
+mybatis 中，除了将一条数据映射为一个实体对象外，还可以将一条数据封装到 map 集合中
+
+若查询的结果为多条，则会封装成多个map对象，最终会将所有map封装到一个 list 集合中。
+
+此外，可以使用 `@MapKey` 注解设置每条数据封装的map对象的key值，然后将所有的map对象封装到一个 map 集合中。
+
+```xml
+<!-- Map<String, Object> queryUserByIdToMap(@Param("id") Integer id); -->
+<select id="queryUserByIdToMap" resultType="map">
+  select * from t_user where id = #{id}
+</select>
+
+<!--
+  List<Map<String, Object>> queryAllUserToMap();
+
+  查询结果: list=[
+          {password=123456, gender=男, id=1, age=20, email=admin@126.com, username=admin},
+          {password=8888, gender=男, id=3, age=20, email=admin@126.com, username=zhangsan}
+          ]
+-->
+<select id="queryAllUserToMap" resultType="map">
+  select * from t_user
+</select>
+
+<!--
+  @MapKey("id")
+  Map<String, Map<String, Object>> queryAllUserToKeyMap();
+  此时，map中的key为 @MapKey 注解中 value 值指定的字段
+
+  查询结果: map={
+          1={password=123456, gender=男, id=1, age=20, email=admin@126.com, username=admin},
+          3={password=8888, gender=男, id=3, age=20, email=admin@126.com, username=zhangsan}
+          }
+-->
+<select id="queryAllUserToKeyMap" resultType="map">
+  select * from t_user
+</select>
+```
 
 

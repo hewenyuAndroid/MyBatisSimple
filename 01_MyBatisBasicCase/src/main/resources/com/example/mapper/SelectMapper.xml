@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.mapper.SelectMapper">
+
+    <!-- UserDTO queryUserById(@Param("id") Integer id); -->
+    <select id="queryUserById" resultType="UserDTO">
+        select * from t_user where id = #{id}
+    </select>
+
+    <!-- List<UserDTO> queryAllUser(); -->
+    <select id="queryAllUser" resultType="UserDTO">
+        select * from t_user
+    </select>
+
+    <!-- Integer queryUserCount(); -->
+    <select id="queryUserCount" resultType="integer">
+        <!--
+            查询的结果为 Integer 类型，mybatis 中 Integer 类型的类型别名为 int 或 integer
+        -->
+        select count(*) from t_user
+    </select>
+
+    <!-- Map<String, Object> queryUserByIdToMap(@Param("id") Integer id); -->
+    <select id="queryUserByIdToMap" resultType="map">
+        select * from t_user where id = #{id}
+    </select>
+
+    <!--
+        List<Map<String, Object>> queryAllUserToMap();
+
+        查询结果: list=[
+                {password=123456, gender=男, id=1, age=20, email=admin@126.com, username=admin},
+                {password=8888, gender=男, id=3, age=20, email=admin@126.com, username=zhangsan}
+                ]
+    -->
+    <select id="queryAllUserToMap" resultType="map">
+        select * from t_user
+    </select>
+
+    <!--
+        @MapKey("id")
+        Map<String, Map<String, Object>> queryAllUserToKeyMap();
+        此时，map中的key为 @MapKey 注解中 value 值指定的字段
+
+        查询结果: map={
+                1={password=123456, gender=男, id=1, age=20, email=admin@126.com, username=admin},
+                3={password=8888, gender=男, id=3, age=20, email=admin@126.com, username=zhangsan}
+                }
+    -->
+    <select id="queryAllUserToKeyMap" resultType="map">
+        select * from t_user
+    </select>
+
+</mapper>
