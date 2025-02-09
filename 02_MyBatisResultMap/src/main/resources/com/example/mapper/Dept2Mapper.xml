@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.mapper.Dept2Mapper">
+
+    <resultMap id="DeptResultMapCollection" type="Dept2">
+        <id property="deptId" column="dept_id"/>
+        <result property="deptName" column="dept_name"/>
+        <!--
+            property: 设置需要处理映射关系的属性的属性名
+            ofType: 设置 collection 标签所处理的集合属性中存储的类型
+        -->
+        <collection property="list" ofType="Emp">
+            <id property="empId" column="emp_id"/>
+            <result property="empUsername" column="emp_username"/>
+            <result property="empPassword" column="emp_password"/>
+            <result property="age" column="age"/>
+            <result property="gender" column="gender"/>
+            <result property="deptId" column="dept_id"/>
+        </collection>
+    </resultMap>
+    <!-- Dept2 queryDeptEmpByDeptId(@Param("deptId") Integer deptId); -->
+    <select id="queryDeptEmpByDeptId" resultMap="DeptResultMapCollection">
+        <!--
+            使用 collection 集合方式完成一对多属性的映射
+            查询结果: dept=Dept2{
+                    deptId=1, deptName='开发',
+                    list=[
+                        Emp{empId=1, empUsername='zhangsan', empPassword='123456', age=20, gender='男', deptId=1},
+                        Emp{empId=2, empUsername='lisi', empPassword='123456', age=21, gender='男', deptId=1}
+                        ]
+                    }
+        -->
+        select t_dept.*, t_emp.*
+        from t_dept
+        left join t_emp
+        on t_dept.dept_id = t_emp.dept_id
+        where t_dept.dept_id = #{deptId}
+    </select>
+
+    <resultMap id="DeptResultMapStep" type="Dept2">
+        <id property="deptId" column="dept_id"/>
+        <result property="deptName" column="dept_name"/>
+        <association property="list"
+                     select="com.example.mapper.EmpMapper.queryEmpListByDeptId"
+                     column="dept_id"
+                     fetchType="eager"
+        />
+    </resultMap>
+    <!-- Dept2 queryDeptEmpByDeptIdUseStep(@Param("deptId") Integer deptId); -->
+    <select id="queryDeptEmpByDeptIdUseStep" resultMap="DeptResultMapStep">
+        <!--
+            分布查询
+            得到结果: dept=Dept2{
+                        deptId=1, deptName='开发',
+                        list=[
+                            Emp{empId=1, empUsername='zhangsan', empPassword='123456', age=20, gender='男', deptId=1},
+                            Emp{empId=2, empUsername='lisi', empPassword='123456', age=21, gender='男', deptId=1}
+                            ]
+                        }
+        -->
+        select * from t_dept where dept_id = #{deptId}
+    </select>
+
+</mapper>

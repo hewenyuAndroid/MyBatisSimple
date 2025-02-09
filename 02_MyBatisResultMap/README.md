@@ -4,6 +4,8 @@ myBatis resultMap 使用
 
 # resultMap 处理属性和字段的映射关系
 
+查询员工信息，员工对象所有字段均为基础类型数据，且与表中字段一一对应
+
 ```xml
 <!-- Emp queryEmpByEmpId(@Param("id") Integer empId); -->
 <select id="queryEmpByEmpId" resultType="Emp">
@@ -48,6 +50,8 @@ myBatis resultMap 使用
 ```
 
 # resultMap 多对一映射处理 (实体类型属性)
+
+查询员工信息，员工信息中包含 `Dept dept` 属性，该属性通过员工信息表中的 `emp.dept_id` 关联 `t_dept` 表查询得到
 
 ## 多表查询，使用 级联方式映射属性和字段
 
@@ -157,6 +161,106 @@ myBatis resultMap 使用
 <!-- Emp2 queryEmpByEmpIdUseStep(@Param("empId") Integer empId); -->
 <select id="queryEmpByEmpIdUseStep" resultMap="EmpResultMapStep">
     select * from t_emp where emp_id = #{empId}
+</select>
+```
+
+
+# resultMap 一对多映射处理 (List集合属性)
+
+查询部门信息，部门信息下包含 `List<Emp> list` 列表属性，通过 `dept.dept_id` 查询员工表得到该部门的所有员工信息
+
+## collection
+
+```xml
+<resultMap id="DeptResultMapCollection" type="Dept2">
+    <id property="deptId" column="dept_id"/>
+    <result property="deptName" column="dept_name"/>
+    <!--
+        property: 设置需要处理映射关系的属性的属性名
+        ofType: 设置 collection 标签所处理的集合属性中存储的类型
+    -->
+    <collection property="list" ofType="Emp">
+        <id property="empId" column="emp_id"/>
+        <result property="empUsername" column="emp_username"/>
+        <result property="empPassword" column="emp_password"/>
+        <result property="age" column="age"/>
+        <result property="gender" column="gender"/>
+        <result property="deptId" column="dept_id"/>
+    </collection>
+</resultMap>
+<!-- Dept2 queryDeptEmpByDeptId(@Param("deptId") Integer deptId); -->
+<select id="queryDeptEmpByDeptId" resultMap="DeptResultMapCollection">
+    <!--
+        使用 collection 集合方式完成一对多属性的映射
+        查询结果: dept=Dept2{
+                deptId=1, deptName='开发',
+                list=[
+                    Emp{empId=1, empUsername='zhangsan', empPassword='123456', age=20, gender='男', deptId=1},
+                    Emp{empId=2, empUsername='lisi', empPassword='123456', age=21, gender='男', deptId=1}
+                    ]
+                }
+    -->
+    select t_dept.*, t_emp.*
+    from t_dept
+    left join t_emp
+    on t_dept.dept_id = t_emp.dept_id
+    where t_dept.dept_id = #{deptId}
+</select>
+```
+
+
+## 分布查询方案
+
+分步查询可以实现延迟加载，但是必须在核心配置文件中设置全局配置信息:
+
+- `lazyLoadingEnable`: 延迟加载的全局开关，当开启时，所有的关联对象都会延迟加载;
+- `aggressiveLazyLoading`: 当开启时，任何方法的调用都会加载该对象的所有属性，否则每个属性会按需加载。
+
+> step1 创建根据 dept_id 查询所有员工信息的方法
+
+// EmpMapper.xml
+```xml
+<resultMap id="EmpResultMap" type="Emp">
+    <id property="empId" column="emp_id"/>
+    <result property="empUsername" column="emp_username"/>
+    <result property="empPassword" column="emp_password"/>
+    <result property="age" column="age"/>
+    <result property="gender" column="gender"/>
+    <result property="deptId" column="dept_id"/>
+</resultMap>
+
+<!-- List<Emp> queryEmpListByDeptId(@Param("deptId") Integer deptId); -->
+<select id="queryEmpListByDeptId" resultMap="EmpResultMap">
+    select * from t_emp where dept_id = #{deptId}
+</select>
+```
+
+> step2 通过 dept_id 查询当前部门下的所有员工
+
+// Dept2Mapper.xml
+```xml
+<resultMap id="DeptResultMapStep" type="Dept2">
+    <id property="deptId" column="dept_id"/>
+    <result property="deptName" column="dept_name"/>
+    <association property="list"
+                 select="com.example.mapper.EmpMapper.queryEmpListByDeptId"
+                 column="dept_id"
+                 fetchType="eager"
+    />
+</resultMap>
+<!-- Dept2 queryDeptEmpByDeptIdUseStep(@Param("deptId") Integer deptId); -->
+<select id="queryDeptEmpByDeptIdUseStep" resultMap="DeptResultMapStep">
+    <!--
+        分布查询
+        得到结果: dept=Dept2{
+                    deptId=1, deptName='开发',
+                    list=[
+                        Emp{empId=1, empUsername='zhangsan', empPassword='123456', age=20, gender='男', deptId=1},
+                        Emp{empId=2, empUsername='lisi', empPassword='123456', age=21, gender='男', deptId=1}
+                        ]
+                    }
+    -->
+    select * from t_dept where dept_id = #{deptId}
 </select>
 ```
 
