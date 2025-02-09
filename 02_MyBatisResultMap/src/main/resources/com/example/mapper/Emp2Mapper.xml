@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.mapper.Emp2Mapper">
+
+    <resultMap id="EmpResultMap" type="Emp2">
+        <id property="empId" column="emp_id"/>
+        <result property="empUsername" column="emp_username"/>
+        <result property="empPassword" column="emp_password"/>
+        <result property="age" column="age"/>
+        <result property="gender" column="gender"/>
+        <!--
+            <association>: 处理多对一的映射关系(处理实体类型的属性)
+            property: 设置需要处理映射关系的属性的属性名
+            javaType: 设置需要处理的属性的类型
+        -->
+        <association property="dept" javaType="Dept">
+            <id property="deptId" column="dept_id"/>
+            <result property="deptName" column="dept_name"/>
+        </association>
+    </resultMap>
+
+    <!-- Emp2 queryEmpByEmpId(@Param("empId") Integer empId); -->
+    <select id="queryEmpByEmpId" resultMap="EmpResultMap">
+        <!--
+            多表查询
+            得到结果: emp=Emp2{
+                        empId=1, empUsername='zhangsan', empPassword='123456', age=20, gender='男',
+                        dept=Dept{deptId=1, deptName='开发'}
+                        }
+        -->
+        SELECT t_emp.*, t_dept.*
+        FROM t_emp
+        LEFT JOIN t_dept
+        ON t_emp.dept_id = t_dept.dept_id
+        WHERE t_emp.emp_id = #{empId}
+    </select>
+
+
+</mapper>
