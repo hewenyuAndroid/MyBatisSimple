@@ -49,7 +49,37 @@ myBatis resultMap 使用
 
 # resultMap 多对一映射处理 (实体类型属性)
 
-## 多表查询方案
+## 多表查询，使用 级联方式映射属性和字段
+
+```xml
+<resultMap id="EmpResultMapJiLian" type="Emp2">
+    <id property="empId" column="emp_id"/>
+    <result property="empUsername" column="emp_username"/>
+    <result property="empPassword" column="emp_password"/>
+    <result property="age" column="age"/>
+    <result property="gender" column="gender"/>
+    <!-- 使用级联方式映射属性和字段 -->
+    <result property="dept.deptId" column="dept_id"/>
+    <result property="dept.deptName" column="dept_name"/>
+</resultMap>
+<!-- Emp2 queryEmpByEmpIdUseJiLian(@Param("empId") Integer empId); -->
+<select id="queryEmpByEmpIdUseJiLian" resultMap="EmpResultMapJiLian">
+    <!--
+        使用resultMap级联方式映射属性和字段
+        得到结果: emp=Emp2{
+                    empId=1, empUsername='zhangsan', empPassword='123456', age=20, gender='男',
+                    dept=Dept{deptId=1, deptName='开发'}
+                    }
+    -->
+    select t_emp.*, t_dept.*
+    from t_emp
+    left JOIN t_dept
+    ON t_emp.dept_id = t_dept.dept_id
+    where t_emp.emp_id = #{empId}
+</select>
+```
+
+## 多表查询，使用 association 方式映射实体对象
 
 ```xml
 <resultMap id="EmpResultMap" type="Emp2">
@@ -69,10 +99,10 @@ myBatis resultMap 使用
     </association>
 </resultMap>
 
-<!-- Emp2 queryEmpByEmpId(@Param("empId") Integer empId); -->
-<select id="queryEmpByEmpId" resultMap="EmpResultMap">
+<!-- Emp2 queryEmpByEmpIdAssociation(@Param("empId") Integer empId); -->
+<select id="queryEmpByEmpIdAssociation" resultMap="EmpResultMap">
     <!--
-        多表查询
+        使用 association 方式映射实体类型属性
         得到结果: emp=Emp2{
                     empId=1, empUsername='zhangsan', empPassword='123456', age=20, gender='男',
                     dept=Dept{deptId=1, deptName='开发'}
@@ -87,6 +117,49 @@ myBatis resultMap 使用
 ```
 
 ## 分步查询方案
+
+> step1 创建 dept 表查询的 mapper 方法
+
+// DeptMapper.xml
+```xml
+<resultMap id="DeptResultMap" type="Dept">
+    <id property="deptId" column="dept_id"/>
+    <result property="deptName" column="dept_name"/>
+</resultMap>
+
+<!-- Dept queryDeptByDeptId(@Param("deptId") String deptId); -->
+<select id="queryDeptByDeptId" resultMap="DeptResultMap">
+    select * from t_dept where dept_id = #{deptId}
+</select>
+```
+
+> step2 使用分步查询，查询 emp 对象
+
+```xml
+<resultMap id="EmpResultMapStep" type="Emp2">
+    <id property="empId" column="emp_id"/>
+    <result property="empUsername" column="emp_username"/>
+    <result property="empPassword" column="emp_password"/>
+    <result property="age" column="age"/>
+    <result property="gender" column="gender"/>
+    <!--
+        property: 设置需要处理映射关系的属性的属性名
+        select: 设置分布查询 sql 的唯一标识 ( namespace + id )
+        column: 将查询出的某个字段作为分步查询的 sql 的条件
+        fetchType: 在开启了延迟加载的环境中，通过该属性设置当前的分布查询是否使用延迟加载
+        fetchType="eager(立即加载)|lazy(延迟加载)"
+    -->
+    <association property="dept"
+                 fetchType="eager"
+                 select="com.example.mapper.DeptMapper.queryDeptByDeptId"
+                 column="dept_id"/>
+</resultMap>
+<!-- Emp2 queryEmpByEmpIdUseStep(@Param("empId") Integer empId); -->
+<select id="queryEmpByEmpIdUseStep" resultMap="EmpResultMapStep">
+    select * from t_emp where emp_id = #{empId}
+</select>
+```
+
 
 
 

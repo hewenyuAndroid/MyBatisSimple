@@ -29,11 +29,29 @@ public class ResultMapCaseTest {
     }
 
     @Test
-    public void testQueryEmpByEmpIdWithObj() {
+    public void testQueryEmpByEmpIdJiLian() {
         SqlSession sqlSession = SqlSessionUtil.openSqlSession();
         Emp2Mapper mapper = sqlSession.getMapper(Emp2Mapper.class);
-        Emp2 emp = mapper.queryEmpByEmpId(1);
-        System.out.println("ResultMapCaseTest: testQueryEmpByEmpIdWithObj(): emp=" + emp);
+        Emp2 emp = mapper.queryEmpByEmpIdUseJiLian(1);
+        System.out.println("ResultMapCaseTest: testQueryEmpByEmpIdJiLian(): emp=" + emp);
+        sqlSession.close();
+    }
+
+    @Test
+    public void testQueryEmpByEmpIdAssociation() {
+        SqlSession sqlSession = SqlSessionUtil.openSqlSession();
+        Emp2Mapper mapper = sqlSession.getMapper(Emp2Mapper.class);
+        Emp2 emp = mapper.queryEmpByEmpIdAssociation(1);
+        System.out.println("ResultMapCaseTest: testQueryEmpByEmpIdAssociation(): emp=" + emp);
+        sqlSession.close();
+    }
+
+    @Test
+    public void testQueryEmpByEmpIdUseStep() {
+        SqlSession sqlSession = SqlSessionUtil.openSqlSession();
+        Emp2Mapper mapper = sqlSession.getMapper(Emp2Mapper.class);
+        Emp2 emp = mapper.queryEmpByEmpIdUseStep(1);
+        System.out.println("ResultMapCaseTest: testQueryEmpByEmpIdUseStep(): emp=" + emp);
         sqlSession.close();
     }
 
