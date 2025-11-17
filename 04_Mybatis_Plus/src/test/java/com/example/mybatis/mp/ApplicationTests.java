@@ -1,4 +1,4 @@
-package com.scrm.server.mp;
+package com.example.mybatis.mp;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

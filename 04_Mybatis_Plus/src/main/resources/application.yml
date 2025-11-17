@@ -9,5 +9,12 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/mybatis_plus?serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&useSSL=false
 
+mybatis-plus:
+  global-config:
+    # 关闭启动时的 MyBatisPlus 符号
+    banner: false
+  configuration:
+    # 配置 MyBatis Plus 的日志输出
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
 
