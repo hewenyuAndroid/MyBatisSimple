@@ -11,27 +11,28 @@ DROP TABLE IF EXISTS `user`;
 
 CREATE TABLE `user`
 (
-    id BIGINT NOT NULL COMMENT '主键ID',
-    name VARCHAR(30) NULL DEFAULT NULL COMMENT '姓名',
-    age INT NULL DEFAULT NULL COMMENT '年龄',
+    id    BIGINT NOT NULL COMMENT '主键ID',
+    name  VARCHAR(30) NULL DEFAULT NULL COMMENT '姓名',
+    age   INT NULL DEFAULT NULL COMMENT '年龄',
     email VARCHAR(50) NULL DEFAULT NULL COMMENT '邮箱',
     PRIMARY KEY (id)
 );
 
-DELETE FROM `user`;
+DELETE
+FROM `user`;
 
-INSERT INTO `user` (id, name, age, email) VALUES
-                                              (1, 'Jone', 18, 'test1@baomidou.com'),
-                                              (2, 'Jack', 20, 'test2@baomidou.com'),
-                                              (3, 'Tom', 28, 'test3@baomidou.com'),
-                                              (4, 'Sandy', 21, 'test4@baomidou.com'),
-                                              (5, 'Billie', 24, 'test5@baomidou.com');
+INSERT INTO `user` (id, name, age, email)
+VALUES (1, 'Jone', 18, 'test1@baomidou.com'),
+       (2, 'Jack', 20, 'test2@baomidou.com'),
+       (3, 'Tom', 28, 'test3@baomidou.com'),
+       (4, 'Sandy', 21, 'test4@baomidou.com'),
+       (5, 'Billie', 24, 'test5@baomidou.com');
 ```
-
 
 # 配置 `Mybatis Plus`
 
-将 `pom.xml` 文件中的 `mybatis-spring-boot-starter` 依赖改为 `mybatis plus` 的依赖 `mybatis-plus-spring-boot3-starter`, `mybatis plus` 依赖中会引入 `mybatis` 的依赖;
+将 `pom.xml` 文件中的 `mybatis-spring-boot-starter` 依赖改为 `mybatis plus` 的依赖 `mybatis-plus-spring-boot3-starter`,
+`mybatis plus` 依赖中会引入 `mybatis` 的依赖;
 
 ![MyBatis Plus Spring Boot3 Starter](./imgs/mybatis_plus_spring_boot3_starter_dependencies.png)
 
@@ -80,7 +81,6 @@ mybatis-plus:
     banner: false
 ```
 
-
 > 配置 `MyBatis Plus` 的控制台输出 SQL 日志
 
 在 `yml` 文件内配置如下内容
@@ -103,7 +103,6 @@ JDBC Connection [HikariProxyConnection@407958234 wrapping com.mysql.cj.jdbc.Conn
 Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@5a3cf824]
 ```
 
-
 ## `Mybatis Plus` 使用 `BaseMapper` 实现增删改
 
 ![BaseMapper 类继承关系](./imgs/mybatis_plus_base_mapper_interface_struct.png)
@@ -122,4 +121,38 @@ public interface UserMapper2 extends BaseMapper<User> {
 ```
 
 ![MyBatis Plus BaseMapper 接口方法列表](./imgs/mybatis_plus_base_mapper_method_list.png)
+
+[MyBase Plus 使用 BaseMapper 实现增删改查操作](./src/test/java/com/example/mybatis/mp/MyBatisPlusBaseMapperTest.java)
+
+## `MyBatis Plus` 使用 `IService<T>` 实现 `Service` 层的增删改查
+
+使用 `Mybatis Plus` 提供的 `Service` 层服务需要完成一下步骤:
+
+1. 创建 Service 层接口 (例如: [UserService2](./src/main/java/com/example/mybatis/mp/service/UserService2.java))，继承自
+   `IService<T>` 该接口内部定义了 `Service` 层操作 `crud` 的相关方法;
+2. 创建 ServiceImpl 接口实现类 (
+   例如: [UserService2Impl](./src/main/java/com/example/mybatis/mp/service/impl/UserService2Impl.java)), 实现 step1
+   定义的接口;
+    - 此时，由于 `UserService2` 接口继承自 `IService<T>` ，`UserService2Impl` 实现类内部有大量的抽象方法需要实现;
+3. 让自定义的接口实现类 `UserService2Impl` 继承自 `ServiceImpl`, 其内部实现了 `IService` 接口定义的抽象方法;
+
+```java
+// ServiceImpl 类需要传入两个泛型
+// M: 为对应的 Mapper 接口
+// T: 为对应的数据对象
+public class ServiceImpl<M extends BaseMapper<T>, T> extends CrudRepository<M, T> implements IService<T> {
+}
+```
+
+![ServiceImpl<M extends BaseMapper<T>, T> 类继承关系](./imgs/mybatis_plus_service_impl_class_struct.png)
+
+![ServiceImpl<M extends BaseMapper<T>, T> 内部实现的方法列表](./imgs/mybatis_plus_service_impl_method_list.png)
+
+[使用 IService 实现增删改查操作](./src/test/java/com/example/mybatis/mp/MyBatisPlusServiceTest.java)
+
+
+
+
+
+
 
