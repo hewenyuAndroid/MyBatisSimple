@@ -47,5 +47,11 @@ public class MyBatisPlusBaseMapperTest {
         System.out.println("delete count: " + count);
     }
 
+    @Test
+    public void testSelectByUsername() {
+        User user = userMapper2.selectByUsername("Tom");
+        System.out.println(user);
+    }
+
 
 }

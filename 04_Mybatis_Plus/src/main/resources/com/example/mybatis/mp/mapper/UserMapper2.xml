@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 指定命名空间为目标映射的接口 -->
+<mapper namespace="com.example.mybatis.mp.mapper.UserMapper2">
+
+    <!--
+        User selectByUsername(@Param("username") String username);
+    -->
+    <select id="selectByUsername" resultType="com.example.mybatis.mp.domain.User" parameterType="String">
+        select * from User where name = #{username}
+    </select>
+
+</mapper>

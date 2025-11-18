@@ -151,6 +151,37 @@ public class ServiceImpl<M extends BaseMapper<T>, T> extends CrudRepository<M, T
 [使用 IService 实现增删改查操作](./src/test/java/com/example/mybatis/mp/MyBatisPlusServiceTest.java)
 
 
+## `Mybatis Plus` 自定义查询
+
+1. 在 dao 层定义查询的抽象方法;
+
+```java
+@Mapper
+public interface UserMapper2 extends BaseMapper<User> {
+    User selectByUsername(@Param("username") String username);
+}
+```
+
+2. 创建对应的 `mapper.xml` 文件
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 指定命名空间为目标映射的接口 -->
+<mapper namespace="com.example.mybatis.mp.mapper.UserMapper2">
+
+    <!--
+        User selectByUsername(@Param("username") String username);
+    -->
+    <select id="selectByUsername" resultType="com.example.mybatis.mp.domain.User" parameterType="String">
+        select * from User where name = #{username}
+    </select>
+
+</mapper>
+```
 
 
 
