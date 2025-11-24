@@ -4,6 +4,32 @@ myBatis resultMap 使用
 
 # resultMap 处理属性和字段的映射关系
 
+解决 数据库字段名 (下划线) 和 pojo 属性名 (驼峰) 不一致，导致的数据映射问题
+
+1. sql 查询时，使用别名的方式，例如: `select emp_id as empId, emp_name as empName from emp where emp_id = 1`;
+2. 在 `mapper-config.xml` 中配置全局配置，自动将下划线转换成驼峰
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+
+    <!--
+        通过 mybatis 的全局配置
+        解决数据库字段 (emp_id) 和pojo实体属性 (empId) 映射问题
+    -->
+    <settings>
+        <!--
+            将 数据库字段的下划线自动映射成驼峰，例如: emp_id -> empId
+        -->
+        <setting name="mapUnderscoreToCamelCase" value="true"/>
+    </settings>
+    ...
+</configuration>
+```
+3. 使用 `resultMap` 完成自定义映射
+
 查询员工信息，员工对象所有字段均为基础类型数据，且与表中字段一一对应
 
 ```xml

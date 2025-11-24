@@ -6,6 +6,17 @@
 
     <properties resource="jdbc.properties"/>
 
+    <!--
+        通过 mybatis 的全局配置
+        解决数据库字段 (emp_id) 和pojo实体属性 (empId) 映射问题
+    -->
+    <settings>
+        <!--
+            将 数据库字段的下划线自动映射成驼峰，例如: emp_id -> empId
+        -->
+        <setting name="mapUnderscoreToCamelCase" value="true"/>
+    </settings>
+
     <typeAliases>
         <package name="com.example.pojo"/>
     </typeAliases>
