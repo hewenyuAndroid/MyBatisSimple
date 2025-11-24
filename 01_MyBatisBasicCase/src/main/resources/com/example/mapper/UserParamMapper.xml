@@ -51,7 +51,7 @@
     </select>
 
     <!-- Integer insertUser(UserDTO user); -->
-    <select id="insertUser">
+    <insert id="insertUser">
         <!--
             若 mapper 接口方法的参数为实体类型的参数，只需要通过 #{} 或 ${} 访问实体类中的属性名即可
             属性名规则: public String getUsername() {} 方法得到属性名 username，即实体中存在 getXxx() 方法即可
@@ -59,7 +59,7 @@
             注意: 返回值类型使用 Integer ，而不是 int，范围的值为 null 使用 int 接收会报错
         -->
         insert into t_user values(null, #{username}, #{password}, #{age}, #{gender}, #{email})
-    </select>
+    </insert>
 
     <!-- UserDTO checkLoginByParam(@Param("username") String username, @Param("password") String password); -->
     <select id="checkLoginByParam" resultType="UserDTO">

@@ -66,7 +66,7 @@
     </select>
 
     <!-- Integer batchDeleteByIds(@Param("ids") String ids); -->
-    <select id="batchDeleteByIds" resultType="int">
+    <delete id="batchDeleteByIds">
         <!--
             注意，在sql拼接时，如果使用 #{} 方式会默认为字符串添加 '' 单引号，例如下面的sql会得到
             delete from t_user where id in('1,2')   // 错误
@@ -74,7 +74,7 @@
             delete from t_user where id in(1,2)
         -->
         delete from t_user where id in(${ids})
-    </select>
+    </delete>
 
     <!-- UserDTO queryUserByIdFromTable(@Param("tableName") String tableName, @Param("id") Integer id); -->
     <select id="queryUserByIdFromTable" resultType="UserDTO">

@@ -78,7 +78,7 @@ public class MyBatisSelectCaseTest {
     public void testBatchDeleteByIds() {
         SqlSession sqlSession = SqlSessionUtil.openSqlSession();
         SelectMapper mapper = sqlSession.getMapper(SelectMapper.class);
-        Integer result = mapper.batchDeleteByIds("8,9,10");
+        Integer result = mapper.batchDeleteByIds("2,8,9,10");
         System.out.println("MyBatisSelectCaseTest: testBatchDeleteByIds(), result=" + result);
         sqlSession.close();
     }
