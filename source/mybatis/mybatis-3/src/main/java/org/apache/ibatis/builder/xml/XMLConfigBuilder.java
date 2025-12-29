@@ -94,6 +94,7 @@ public class XMLConfigBuilder extends BaseBuilder {
 
   private XMLConfigBuilder(Class<? extends Configuration> configClass, XPathParser parser, String environment,
       Properties props) {
+    // XMLConfigBuilder 的构造方法中，创建了 Configuration 对象
     super(newConfig(configClass));
     ErrorContext.instance().resource("SQL Mapper Configuration");
     this.configuration.setVariables(props);
@@ -114,20 +115,33 @@ public class XMLConfigBuilder extends BaseBuilder {
   private void parseConfiguration(XNode root) {
     try {
       // issue #117 read properties first
+      // 解析 properties 标签
       propertiesElement(root.evalNode("properties"));
+      // 解析 settings 标签
       Properties settings = settingsAsProperties(root.evalNode("settings"));
+      // 读取文件
       loadCustomVfsImpl(settings);
+      // 日志设置
       loadCustomLogImpl(settings);
+      // 类型别名设置
       typeAliasesElement(root.evalNode("typeAliases"));
+      // 插件
       pluginsElement(root.evalNode("plugins"));
+      // 对象工厂
       objectFactoryElement(root.evalNode("objectFactory"));
+      // 对象加工
       objectWrapperFactoryElement(root.evalNode("objectWrapperFactory"));
+      // 反射工具箱
       reflectorFactoryElement(root.evalNode("reflectorFactory"));
+      // settings 子标签赋值，默认值就是在这里设置的
       settingsElement(settings);
       // read it after objectFactory and objectWrapperFactory issue #631
+      // 加载数据源
       environmentsElement(root.evalNode("environments"));
       databaseIdProviderElement(root.evalNode("databaseIdProvider"));
+      // 自定义类型处理器
       typeHandlersElement(root.evalNode("typeHandlers"));
+      // 解析引用的 Mapper 映射器
       mappersElement(root.evalNode("mappers"));
     } catch (Exception e) {
       throw new BuilderException("Error parsing SQL Mapper Configuration. Cause: " + e, e);
@@ -138,6 +152,7 @@ public class XMLConfigBuilder extends BaseBuilder {
     if (context == null) {
       return new Properties();
     }
+    // 获取 settings 标签下的所有子节点
     Properties props = context.getChildrenAsProperties();
     // Check that all settings are known to the configuration class
     MetaClass metaConfig = MetaClass.forClass(Configuration.class, localReflectorFactory);
@@ -236,25 +251,32 @@ public class XMLConfigBuilder extends BaseBuilder {
 
   private void propertiesElement(XNode context) throws Exception {
     if (context == null) {
+      // properties 属性可以为空
       return;
     }
     Properties defaults = context.getChildrenAsProperties();
     String resource = context.getStringAttribute("resource");
     String url = context.getStringAttribute("url");
     if (resource != null && url != null) {
+      // properties 不能同时配置 resource 和 url 属性
       throw new BuilderException(
           "The properties element cannot specify both a URL and a resource based property file reference.  Please specify one or the other.");
     }
     if (resource != null) {
+      // 从 properties 文件中加载配置属性
       defaults.putAll(Resources.getResourceAsProperties(resource));
     } else if (url != null) {
+      // 从 url 中加载 properties 属性
       defaults.putAll(Resources.getUrlAsProperties(url));
     }
     Properties vars = configuration.getVariables();
     if (vars != null) {
+      // 如果 configuration 中已经有属性信息时，合并属性
       defaults.putAll(vars);
     }
+    // 更新属性信息
     parser.setVariables(defaults);
+    // 保存属性到 configuraion 对象中
     configuration.setVariables(defaults);
   }
 
@@ -390,11 +412,16 @@ public class XMLConfigBuilder extends BaseBuilder {
     if (context == null) {
       return;
     }
-    for (XNode child : context.getChildren()) {
+    for (XNode child : context.getChildren()) { // 循环遍历 <mappers> 标签的所有的子节点
+      // 不同的定义方式的扫描，最终都是调用 addMapper() 方法，添加到 MapperRegistry
       if ("package".equals(child.getName())) {
+        // 按照 包 扫描 mapper 文件
         String mapperPackage = child.getStringAttribute("name");
+        // 扫描 package 属性配置的包目录，并向 MapperRegistry 注册 Mapper 接口
+        // 每一个类型创建一个 MapperProxyFactory 对象
         configuration.addMappers(mapperPackage);
       } else {
+        // 按照
         String resource = child.getStringAttribute("resource");
         String url = child.getStringAttribute("url");
         String mapperClass = child.getStringAttribute("class");
@@ -435,6 +462,7 @@ public class XMLConfigBuilder extends BaseBuilder {
 
   private static Configuration newConfig(Class<? extends Configuration> configClass) {
     try {
+      // 当前 3.5.16 版本是通过反射创建 Configuration 对象
       return configClass.getDeclaredConstructor().newInstance();
     } catch (Exception ex) {
       throw new BuilderException("Failed to create a new Configuration instance.", ex);
