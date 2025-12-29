@@ -1,11 +1,12 @@
 
+[toc]
 
 
-# MyBatis 源码分析
+# `Mybatis` 源码环境搭建
 
-## 下载 `mybatis-3` 和 `parent` 源码本地编译配置
+## 1. 下载 `mybatis-3` 和 `parent` 源码本地编译配置
 
-> step1: 下载 `mybatis-3` 和 `parent` 项目到本地目录下
+### 1.1 下载 `mybatis-3` 和 `parent` 项目到本地目录下
 
 项目仓库: https://github.com/orgs/mybatis/repositories
 
@@ -37,13 +38,15 @@ git checkout mybatis-parent-45
 ![mybatis-parent 45 tag](./imgs/mybatis-parent-git-checkout-45-tag.png)
 
 
-> step3: 导入 parent 项目到 idea，编译
+### 1.2 导入 parent 项目到 idea，编译
 
-导入 ![mybatis-parent](./imgs/mybatis-parent-open-in-idea.png) 到 idea 中，执行如下命令: 
+导入 `mybatis-parent` 到 idea 中，执行如下命令: 
 
 ```shell
 mvn clean install
 ```
+
+![mybatis-parent](./imgs/mybatis-parent-open-in-idea.png)
 
 首次执行，由于我本地的 maven 版本是 `3.8.6`，执行遇到如下问题:
 
@@ -59,7 +62,7 @@ mvn clean install
 
 ![mybatis-parent本地仓库](./imgs/mybatis-parent-execute-success-in-local-repo.png)
 
-> step4: 编译 `mybatis-3`
+### 1.3 编译 `mybatis-3`
 
 导入 `mybatis-3` 项目到 idea 中
 
@@ -106,13 +109,13 @@ mvn clean install `-DskipTests `-Dcheckstyle.skip=true `-Dpmd.skip=true
 ![mybatis-3本地仓库](./imgs/mybatis-3-execute-success-in-local-repo.png)
 
 
-## `mybatis-3` 关联本地源码
+### 1.4 `mybatis-3` 关联本地源码
 
-> step1: 迁移源码目录
+#### 1.4.1 迁移源码目录
 
 将上述的 `mybatis-3` 和 `parent` 项目导入到 工程源码目录 [source](../source/mybatis) (这一步主要是为了一起上传后，download下来方便)
 
-> step2: 配置 项目的 [pom.xml](./pom.xml) 文件
+#### 1.4.2 配置 项目的 [pom.xml](./pom.xml) 文件
 
 ```xml
 <!-- 导入 mybatis 核心包 -->
@@ -124,11 +127,11 @@ mvn clean install `-DskipTests `-Dcheckstyle.skip=true `-Dpmd.skip=true
 </dependency>
 ```
 
-> step3: 配置源码
+#### 1.4.3 配置源码，解决源码报错问题
 
 ![配置mybatis-3源码](imgs/mybatis-3.5.16-local-config-java-source.png)
 
-> step4: 关联的源码报错问题解决
+> 关联的源码报错问题解决
 
 ![关联工程目录下的源码报错](./imgs/mybatis-3-local-source-compile-fail.png)
 
@@ -143,6 +146,10 @@ mvn clean install `-DskipTests `-Dcheckstyle.skip=true `-Dpmd.skip=true
 
 ![配置正确的本地源码](./imgs/mybatis-3-local-source-compile-success.png)
 
+
+
+
+# `Mybatis` 源码分析
 
 
 
