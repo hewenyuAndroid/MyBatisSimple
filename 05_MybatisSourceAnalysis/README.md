@@ -128,6 +128,22 @@ mvn clean install `-DskipTests `-Dcheckstyle.skip=true `-Dpmd.skip=true
 
 ![配置mybatis-3源码](imgs/mybatis-3.5.16-local-config-java-source.png)
 
+> step4: 关联的源码报错问题解决
+
+![关联工程目录下的源码报错](./imgs/mybatis-3-local-source-compile-fail.png)
+
+原因是因为 源码在工程目录内时，IDEA 会尝试编译这些源码文件，解决方案如下：
+
+- 方案1: 将工程目录下的 `source/mybatis` 目录拷贝到工程外部，然后关联源码时关联这个外部的源码目录;
+- 方案2: 配置 `source/mybatis/mybatis-3/src` 目录不参与编译;
+
+![配置 `source/mybatis/mybatis-3/src` 目录不参与编译](./imgs/mybatis-3-local-source-make-dir-excluded.png)
+
+此时再次打开源码，显示正常
+
+![配置正确的本地源码](./imgs/mybatis-3-local-source-compile-success.png)
+
+
 
 
 
