@@ -191,9 +191,12 @@ public class XMLConfigBuilder extends BaseBuilder {
     }
     for (XNode child : context.getChildren()) {
       if ("package".equals(child.getName())) {
+        // <package name="com.example.mybatis.pojo"/>
         String typeAliasPackage = child.getStringAttribute("name");
         configuration.getTypeAliasRegistry().registerAliases(typeAliasPackage);
       } else {
+        // <typeAlias type="com.example.pojo.UserDTO" alias="abc"/>
+        // <typeAlias type="com.example.mybatis.pojo.User"/>
         String alias = child.getStringAttribute("alias");
         String type = child.getStringAttribute("type");
         try {
@@ -201,6 +204,7 @@ public class XMLConfigBuilder extends BaseBuilder {
           if (alias == null) {
             typeAliasRegistry.registerAlias(clazz);
           } else {
+            // 如果配置的是 <typeAlias/> 标签 && 设置了别名，则该别名配置优先级最高
             typeAliasRegistry.registerAlias(alias, clazz);
           }
         } catch (ClassNotFoundException e) {
@@ -415,6 +419,7 @@ public class XMLConfigBuilder extends BaseBuilder {
     for (XNode child : context.getChildren()) { // 循环遍历 <mappers> 标签的所有的子节点
       // 不同的定义方式的扫描，最终都是调用 addMapper() 方法，添加到 MapperRegistry
       if ("package".equals(child.getName())) {
+        // <package name="com.example.mybatis.mapper"/>
         // 按照 包 扫描 mapper 文件
         String mapperPackage = child.getStringAttribute("name");
         // 扫描 package 属性配置的包目录，并向 MapperRegistry 注册 Mapper 接口
@@ -427,6 +432,7 @@ public class XMLConfigBuilder extends BaseBuilder {
         String mapperClass = child.getStringAttribute("class");
         if (resource != null && url == null && mapperClass == null) {
           ErrorContext.instance().resource(resource);
+          // <mapper resource="mappers/UserMapper.xml"/>
           try (InputStream inputStream = Resources.getResourceAsStream(resource)) {
             XMLMapperBuilder mapperParser = new XMLMapperBuilder(inputStream, configuration, resource,
                 configuration.getSqlFragments());

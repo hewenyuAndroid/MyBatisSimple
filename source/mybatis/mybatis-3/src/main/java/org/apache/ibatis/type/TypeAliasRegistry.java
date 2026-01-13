@@ -135,11 +135,14 @@ public class TypeAliasRegistry {
 
   public void registerAliases(String packageName, Class<?> superType) {
     ResolverUtil<Class<?>> resolverUtil = new ResolverUtil<>();
+    // 加载 packageName 下的资源
     resolverUtil.find(new ResolverUtil.IsA(superType), packageName);
+    // 获取 packageName 下的所有的 class 类
     Set<Class<? extends Class<?>>> typeSet = resolverUtil.getClasses();
     for (Class<?> type : typeSet) {
       // Ignore inner classes and interfaces (including package-info.java)
       // Skip also inner classes. See issue #6
+      // mapper接口注册别名的条件: 不是匿名类 && 不是接口 && 不是成员类
       if (!type.isAnonymousClass() && !type.isInterface() && !type.isMemberClass()) {
         registerAlias(type);
       }
@@ -147,9 +150,12 @@ public class TypeAliasRegistry {
   }
 
   public void registerAlias(Class<?> type) {
+    // 默认使用 Class.simpleName 作为别名
+    // org.apache.ibatis.type.TypeAliasRegistry -> TypeAliasRegistry
     String alias = type.getSimpleName();
     Alias aliasAnnotation = type.getAnnotation(Alias.class);
     if (aliasAnnotation != null) {
+      // 如果有配置别名注解，优先使用注解中的别名
       alias = aliasAnnotation.value();
     }
     registerAlias(alias, type);
@@ -160,11 +166,14 @@ public class TypeAliasRegistry {
       throw new TypeException("The parameter alias cannot be null");
     }
     // issue #748
+    // 别名统一转小写  TypeAliasRegistry -> typealiasregistry
     String key = alias.toLowerCase(Locale.ENGLISH);
     if (typeAliases.containsKey(key) && typeAliases.get(key) != null && !typeAliases.get(key).equals(value)) {
+      // 别名不能重复
       throw new TypeException(
           "The alias '" + alias + "' is already mapped to the value '" + typeAliases.get(key).getName() + "'.");
     }
+    // 缓存别名和类型的映射关系
     typeAliases.put(key, value);
   }
 
