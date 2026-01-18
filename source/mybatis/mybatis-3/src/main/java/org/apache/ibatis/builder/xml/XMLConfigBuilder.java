@@ -117,7 +117,7 @@ public class XMLConfigBuilder extends BaseBuilder {
       // issue #117 read properties first
       // 解析 properties 标签
       propertiesElement(root.evalNode("properties"));
-      // 解析 settings 标签
+      // 解析 settings 标签，这里拿到的数据是自定义配置的 settings 属性
       Properties settings = settingsAsProperties(root.evalNode("settings"));
       // 读取文件
       loadCustomVfsImpl(settings);
@@ -134,6 +134,8 @@ public class XMLConfigBuilder extends BaseBuilder {
       // 反射工具箱
       reflectorFactoryElement(root.evalNode("reflectorFactory"));
       // settings 子标签赋值，默认值就是在这里设置的
+      // 这里的主要目的是将 settings 的配置赋值到 configuraion 对象中
+      // 优先使用 settings 中的自定义属性值，如果没有自定义属性，则使用默认值
       settingsElement(settings);
       // read it after objectFactory and objectWrapperFactory issue #631
       // 加载数据源

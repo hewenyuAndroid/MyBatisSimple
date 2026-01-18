@@ -160,6 +160,13 @@ mvn clean install `-DskipTests `-Dcheckstyle.skip=true `-Dpmd.skip=true
 ![Mybatis工作流程](./imgs/mybatis-executor-flow.png)
 
 
+`Mybatis` 初始化时的对象关联关系
+
+![Mybatis初始化时的对象关联关系](./imgs/mybatis-init-obj-relation.png)
+
+
+
+
 
 
 
