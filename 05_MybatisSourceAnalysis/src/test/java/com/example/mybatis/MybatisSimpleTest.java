@@ -5,13 +5,21 @@ import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+import org.junit.Test;
 
 import java.io.InputStream;
 import java.util.List;
 
-public class MyBatisSimple {
+/**
+ * mybatis案例测试
+ */
+public class MybatisSimpleTest {
 
-    public static void main(String[] args) throws Exception {
+    /**
+     * mybatis简单的查询案例
+     */
+    @Test
+    public void testSimpleQuery() throws Exception {
         // 1. 获取配置文件
         InputStream in = Resources.getResourceAsStream("mybatis-config.xml");
         // 2. 加载解析配置文件并获取 SqlSessionFactory 对象

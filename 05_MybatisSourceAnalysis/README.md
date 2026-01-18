@@ -151,6 +151,15 @@ mvn clean install `-DskipTests `-Dcheckstyle.skip=true `-Dpmd.skip=true
 
 # `Mybatis` 源码分析
 
+宏观上 `Mybatis` 代码可以分为: 基础支持层、核心处理层、接口层
+
+![Mybatis代码分层](./imgs/mybatis-code-layering.png)
+
+`Mybatis` 的主要工作流程如下:
+
+![Mybatis工作流程](./imgs/mybatis-executor-flow.png)
+
+
 
 
 
