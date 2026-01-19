@@ -146,15 +146,21 @@ public abstract class BaseExecutor implements Executor {
       throw new ExecutorException("Executor was closed.");
     }
     if (queryStack == 0 && ms.isFlushCacheRequired()) {
+      // flushCache=true时，即使是查询，也清空一级缓存
       clearLocalCache();
     }
     List<E> list;
     try {
+      // 防止递归查询重复处理缓存
       queryStack++;
+      // 查询一级缓存
+      // ResultHandler 和 ResultSetHandler 的区别
       list = resultHandler == null ? (List<E>) localCache.getObject(key) : null;
       if (list != null) {
+        // 一级缓存命中(本地缓存)
         handleLocallyCachedOutputParameters(ms, key, parameter, boundSql);
       } else {
+        // 一级缓存，二级缓存都没有命中，执行真正的数据库查询操作
         list = queryFromDatabase(ms, parameter, rowBounds, resultHandler, key, boundSql);
       }
     } finally {
@@ -331,12 +337,17 @@ public abstract class BaseExecutor implements Executor {
   private <E> List<E> queryFromDatabase(MappedStatement ms, Object parameter, RowBounds rowBounds,
       ResultHandler resultHandler, CacheKey key, BoundSql boundSql) throws SQLException {
     List<E> list;
+    // 先占位，表示一级缓存中已经有数据了，只是操作还没有完成，相同的操作不用查询数据库了
     localCache.putObject(key, EXECUTION_PLACEHOLDER);
     try {
+      // 执行数据库查询操作，这里有三种执行器 SimpleExecutor, BatchExecutor, ReuseExecutor
+      // 默认是 SimpleExecutor
       list = doQuery(ms, parameter, rowBounds, resultHandler, boundSql);
     } finally {
+      // 移除占位符
       localCache.removeObject(key);
     }
+    // 更新一级缓存
     localCache.putObject(key, list);
     if (ms.getStatementType() == StatementType.CALLABLE) {
       localOutputParameterCache.putObject(key, parameter);

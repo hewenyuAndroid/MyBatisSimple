@@ -59,11 +59,15 @@ public class SimpleExecutor extends BaseExecutor {
     Statement stmt = null;
     try {
       Configuration configuration = ms.getConfiguration();
+      // StatementHandler 是 SQL 处理的关键对象, 这里也会创建 resultSetHandler 和 parameterHandler
       StatementHandler handler = configuration.newStatementHandler(wrapper, ms, parameter, rowBounds, resultHandler,
           boundSql);
+      // 获取一个 Statment 对象并对占位符进行处理，该对象就是 jdbc 查询数据的 Statement
       stmt = prepareStatement(handler, ms.getStatementLog());
+      // 执行查询
       return handler.query(stmt, resultHandler);
     } finally {
+      // 查询结束关闭
       closeStatement(stmt);
     }
   }

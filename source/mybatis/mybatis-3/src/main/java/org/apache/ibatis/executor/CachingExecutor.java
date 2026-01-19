@@ -93,20 +93,30 @@ public class CachingExecutor implements Executor {
   @Override
   public <E> List<E> query(MappedStatement ms, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler,
       CacheKey key, BoundSql boundSql) throws SQLException {
+    // 如果 mapper.xml 文件配置了 <Cache /> 标签，则在 mapper.xml 文件解析时，XMLMapperBuiler.cacheElement() 方法中会创建 Cache 对象
+    // 控制二级缓存的开关有两个
+    // 1. mybatis-config.xml 全局配置文件中的 <settings> 标签 配置的 cacheEnable=true  ->  控制是否创建 CacheExecutor 装饰原有的执行器
+    // 2. mapper.xml 映射文件中的 <cache /> 标签，控制创建 Cache 对象
     Cache cache = ms.getCache();
     if (cache != null) {
+      // flushCache=true, 清空一级二级缓存
       flushCacheIfRequired(ms);
       if (ms.isUseCache() && resultHandler == null) {
         ensureNoOutParams(ms, boundSql);
+        // 获取二级缓存
+        // 缓存通过 TransactionalCacheManager, TransactionalCache 管理
         @SuppressWarnings("unchecked")
         List<E> list = (List<E>) tcm.getObject(cache, key);
         if (list == null) {
+          // 二级缓存没有命中，则进行查询
           list = delegate.query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
+          // 查询结果写入二级缓存
           tcm.putObject(cache, key, list); // issue #578 and #116
         }
         return list;
       }
     }
+    // 若 mapper.xml 没有配置 <cache /> 则直接执行查询操作
     return delegate.query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
   }
 

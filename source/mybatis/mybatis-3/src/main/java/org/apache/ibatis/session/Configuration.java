@@ -733,11 +733,16 @@ public class Configuration {
     } else if (ExecutorType.REUSE == executorType) {
       executor = new ReuseExecutor(this, transaction);
     } else {
+      // 默认创建的执行器是 SimpleExecutor
       executor = new SimpleExecutor(this, transaction);
     }
+    // 二级缓存开关，settings 中的 cacheEnable 默认是 true
+    // mapper.xml 映射文件中的 <cache /> 标签是 创建 Cache 对象
+    // settings 中的 cacheEnable=true 真正的对 Executor 做了缓存的增强
     if (cacheEnabled) {
       executor = new CachingExecutor(executor);
     }
+    // 植入插件的逻辑
     return (Executor) interceptorChain.pluginAll(executor);
   }
 
