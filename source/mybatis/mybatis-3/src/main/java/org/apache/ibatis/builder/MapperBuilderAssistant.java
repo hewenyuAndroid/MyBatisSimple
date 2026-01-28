@@ -219,7 +219,9 @@ public class MapperBuilderAssistant extends BaseBuilder {
       statementBuilder.parameterMap(statementParameterMap);
     }
 
+    // 一个 crud 的 sql 标签对应一个 MappedStatement
     MappedStatement statement = statementBuilder.build();
+    // 保存 MappedStatement 到 configuration
     configuration.addMappedStatement(statement);
     return statement;
   }

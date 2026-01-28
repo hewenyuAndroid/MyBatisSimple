@@ -56,6 +56,7 @@ public class XMLStatementBuilder extends BaseBuilder {
   }
 
   public void parseStatementNode() {
+    // 获取单条sql的id，对应的是接口的方法名称 selectAll
     String id = context.getStringAttribute("id");
     String databaseId = context.getStringAttribute("databaseId");
 
@@ -63,7 +64,9 @@ public class XMLStatementBuilder extends BaseBuilder {
       return;
     }
 
+    // 获取 sql 标签的名称 SELECT/UPDATE/INSERT/DELETE
     String nodeName = context.getNode().getNodeName();
+    // 根据标签名称获取对应操作的 枚举类型
     SqlCommandType sqlCommandType = SqlCommandType.valueOf(nodeName.toUpperCase(Locale.ENGLISH));
     boolean isSelect = sqlCommandType == SqlCommandType.SELECT;
     boolean flushCache = context.getBooleanAttribute("flushCache", !isSelect);

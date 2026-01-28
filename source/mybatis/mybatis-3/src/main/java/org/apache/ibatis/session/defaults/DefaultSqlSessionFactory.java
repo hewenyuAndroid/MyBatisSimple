@@ -91,9 +91,11 @@ public class DefaultSqlSessionFactory implements SqlSessionFactory {
       boolean autoCommit) {
     Transaction tx = null;
     try {
+      // 获取数据库连接配置
       final Environment environment = configuration.getEnvironment();
       final TransactionFactory transactionFactory = getTransactionFactoryFromEnvironment(environment);
       tx = transactionFactory.newTransaction(environment.getDataSource(), level, autoCommit);
+      // 创建 sql 执行器，这里传入的 execType 的默认值是 ExecutorType.SIMPLE
       final Executor executor = configuration.newExecutor(tx, execType);
       return new DefaultSqlSession(configuration, executor, autoCommit);
     } catch (Exception e) {

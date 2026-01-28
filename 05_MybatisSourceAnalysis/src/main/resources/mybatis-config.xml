@@ -12,6 +12,14 @@
     -->
 
     <!--
+            <properties resource="jdbc.properties">
+                如果 resource/url 对应文件的 key/value 和当前文件配置的冲突了，则以 resource/url 文件中的为准
+                <property name="jdbc.username" value="admin"/>
+                <property name="jdbc.password" value="123"/>
+            </properties>
+    -->
+
+    <!--
         导入 jdbc.properties 配置文件，后续可以在当前文件使用使用 ${key} 的方式读取配置数据
     -->
     <properties resource="jdbc.properties"/>

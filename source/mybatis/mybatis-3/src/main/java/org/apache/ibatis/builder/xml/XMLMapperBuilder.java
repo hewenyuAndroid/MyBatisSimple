@@ -94,6 +94,7 @@ public class XMLMapperBuilder extends BaseBuilder {
   }
 
   public void parse() {
+    // resource = mappers/UserMapper.xml
     if (!configuration.isResourceLoaded(resource)) {
       configurationElement(parser.evalNode("/mapper"));
       configuration.addLoadedResource(resource);
@@ -110,16 +111,21 @@ public class XMLMapperBuilder extends BaseBuilder {
 
   private void configurationElement(XNode context) {
     try {
+      // 获取 mapper.xml 文件的命名空间  com.example.mybatis.mapper.UserMapper
       String namespace = context.getStringAttribute("namespace");
       if (namespace == null || namespace.isEmpty()) {
         throw new BuilderException("Mapper's namespace cannot be empty");
       }
       builderAssistant.setCurrentNamespace(namespace);
       cacheRefElement(context.evalNode("cache-ref"));
+      // 解析 <cache /> 标签，如果配置了，会创建对应的 Cache 对象
       cacheElement(context.evalNode("cache"));
       parameterMapElement(context.evalNodes("/mapper/parameterMap"));
+      // 解析 resultMap
       resultMapElements(context.evalNodes("/mapper/resultMap"));
+      // 解析 sql 片段
       sqlElement(context.evalNodes("/mapper/sql"));
+      // 解析 curd 标签
       buildStatementFromContext(context.evalNodes("select|insert|update|delete"));
     } catch (Exception e) {
       throw new BuilderException("Error parsing Mapper XML. The XML location is '" + resource + "'. Cause: " + e, e);
@@ -138,6 +144,7 @@ public class XMLMapperBuilder extends BaseBuilder {
       final XMLStatementBuilder statementParser = new XMLStatementBuilder(configuration, builderAssistant, context,
           requiredDatabaseId);
       try {
+        // crud 标签解析
         statementParser.parseStatementNode();
       } catch (IncompleteElementException e) {
         configuration.addIncompleteStatement(statementParser);

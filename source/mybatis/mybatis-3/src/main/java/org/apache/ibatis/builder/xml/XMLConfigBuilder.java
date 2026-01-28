@@ -117,7 +117,7 @@ public class XMLConfigBuilder extends BaseBuilder {
       // issue #117 read properties first
       // 解析 properties 标签
       propertiesElement(root.evalNode("properties"));
-      // 解析 settings 标签，这里拿到的数据是自定义配置的 settings 属性
+      // 解析 settings 标签，这里拿到的数据是自定义配置的 settings 属性 （预处理）
       Properties settings = settingsAsProperties(root.evalNode("settings"));
       // 读取文件
       loadCustomVfsImpl(settings);
@@ -141,7 +141,7 @@ public class XMLConfigBuilder extends BaseBuilder {
       // 加载数据源
       environmentsElement(root.evalNode("environments"));
       databaseIdProviderElement(root.evalNode("databaseIdProvider"));
-      // 自定义类型处理器
+      // 自定义类型处理器 Java 和 jdbc 类型转换
       typeHandlersElement(root.evalNode("typeHandlers"));
       // 解析引用的 Mapper 映射器
       mappersElement(root.evalNode("mappers"));
@@ -158,6 +158,7 @@ public class XMLConfigBuilder extends BaseBuilder {
     Properties props = context.getChildrenAsProperties();
     // Check that all settings are known to the configuration class
     MetaClass metaConfig = MetaClass.forClass(Configuration.class, localReflectorFactory);
+    // 验证自定义的 settings 的key，是否都有对应的 setter
     for (Object key : props.keySet()) {
       if (!metaConfig.hasSetter(String.valueOf(key))) {
         throw new BuilderException(
@@ -184,6 +185,7 @@ public class XMLConfigBuilder extends BaseBuilder {
 
   private void loadCustomLogImpl(Properties props) {
     Class<? extends Log> logImpl = resolveClass(props.getProperty("logImpl"));
+    // 设置自定义的日志实现，设置成功后，后续所有的 mapper 日志均使用该实现
     configuration.setLogImpl(logImpl);
   }
 
@@ -221,9 +223,12 @@ public class XMLConfigBuilder extends BaseBuilder {
       for (XNode child : context.getChildren()) {
         String interceptor = child.getStringAttribute("interceptor");
         Properties properties = child.getChildrenAsProperties();
+        // 反射创建 Interceptor 实例
         Interceptor interceptorInstance = (Interceptor) resolveClass(interceptor).getDeclaredConstructor()
             .newInstance();
+        // 注入属性
         interceptorInstance.setProperties(properties);
+        // 添加到拦截器链
         configuration.addInterceptor(interceptorInstance);
       }
     }
@@ -260,14 +265,18 @@ public class XMLConfigBuilder extends BaseBuilder {
       // properties 属性可以为空
       return;
     }
+    // 读取内联配置
     Properties defaults = context.getChildrenAsProperties();
+    // <properties resource="jdbc.properties"/>
     String resource = context.getStringAttribute("resource");
+    // <properties url="http://xxxx"/>
     String url = context.getStringAttribute("url");
     if (resource != null && url != null) {
       // properties 不能同时配置 resource 和 url 属性
       throw new BuilderException(
           "The properties element cannot specify both a URL and a resource based property file reference.  Please specify one or the other.");
     }
+    // 如果外部配置文件的 key 和 内联属性的 key 冲突，则会使用外部配置文件的 key-value 覆盖掉内联配置的 key-value
     if (resource != null) {
       // 从 properties 文件中加载配置属性
       defaults.putAll(Resources.getResourceAsProperties(resource));
@@ -277,10 +286,11 @@ public class XMLConfigBuilder extends BaseBuilder {
     }
     Properties vars = configuration.getVariables();
     if (vars != null) {
-      // 如果 configuration 中已经有属性信息时，合并属性
+      // var != null 表示有从java代码传递属性进来，new SqlSessionFactoryBuilder().build(inputStream, props);
+      // 合并 java 代码传递进来的 properties 属性，通过 Java 代码配置的属性优先级最高
       defaults.putAll(vars);
     }
-    // 更新属性信息
+    // 更新属性信息，用于后续 XML 占位符属性值的替换
     parser.setVariables(defaults);
     // 保存属性到 configuraion 对象中
     configuration.setVariables(defaults);
@@ -291,6 +301,7 @@ public class XMLConfigBuilder extends BaseBuilder {
         .setAutoMappingBehavior(AutoMappingBehavior.valueOf(props.getProperty("autoMappingBehavior", "PARTIAL")));
     configuration.setAutoMappingUnknownColumnBehavior(
         AutoMappingUnknownColumnBehavior.valueOf(props.getProperty("autoMappingUnknownColumnBehavior", "NONE")));
+    // 配置文件的缓存默认开启
     configuration.setCacheEnabled(booleanValueOf(props.getProperty("cacheEnabled"), true));
     configuration.setProxyFactory((ProxyFactory) createInstance(props.getProperty("proxyFactory")));
     configuration.setLazyLoadingEnabled(booleanValueOf(props.getProperty("lazyLoadingEnabled"), false));
@@ -428,7 +439,7 @@ public class XMLConfigBuilder extends BaseBuilder {
         // 每一个类型创建一个 MapperProxyFactory 对象
         configuration.addMappers(mapperPackage);
       } else {
-        // 按照
+        // <mapper resource="mappers/UserMapper.xml"/>
         String resource = child.getStringAttribute("resource");
         String url = child.getStringAttribute("url");
         String mapperClass = child.getStringAttribute("class");
@@ -436,6 +447,7 @@ public class XMLConfigBuilder extends BaseBuilder {
           ErrorContext.instance().resource(resource);
           // <mapper resource="mappers/UserMapper.xml"/>
           try (InputStream inputStream = Resources.getResourceAsStream(resource)) {
+            // resource = mappers/UserMapper.xml
             XMLMapperBuilder mapperParser = new XMLMapperBuilder(inputStream, configuration, resource,
                 configuration.getSqlFragments());
             mapperParser.parse();

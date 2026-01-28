@@ -80,6 +80,8 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
   @Override
   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
     try {
+      // method.getDeclaringClass() 返回的是方法声明的类，如果子类没有重写，则返回实现该方法的父类类型
+      // 这里的租用是 过滤掉动态代理对象的 toStirng() equals() 等方法
       if (Object.class.equals(method.getDeclaringClass())) {
         return method.invoke(this, args);
       }
@@ -92,7 +94,9 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
   private MapperMethodInvoker cachedInvoker(Method method) throws Throwable {
     try {
       return MapUtil.computeIfAbsent(methodCache, method, m -> {
+        // 判断是否是接口中的 default 方法
         if (!m.isDefault()) {
+          // 绝大多数 mapper 接口方法都会执行这个流程
           return new PlainMethodInvoker(new MapperMethod(mapperInterface, method, sqlSession.getConfiguration()));
         }
         try {
