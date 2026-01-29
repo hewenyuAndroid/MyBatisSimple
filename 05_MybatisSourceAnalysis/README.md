@@ -167,6 +167,11 @@ mvn clean install `-DskipTests `-Dcheckstyle.skip=true `-Dpmd.skip=true
 
 
 
+## 缓存
+
+![mybatis缓存](./imgs/mybatis-cache-trace.png)
+
+mybatis 缓存可分为一级缓存和二级缓存
 
 
 
