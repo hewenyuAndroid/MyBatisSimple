@@ -103,7 +103,7 @@ public class CachingExecutor implements Executor {
       flushCacheIfRequired(ms);
       if (ms.isUseCache() && resultHandler == null) {
         ensureNoOutParams(ms, boundSql);
-        // 获取二级缓存
+        // 获取二级缓存，二级缓存的数据是存储在 Cache 对象中的，Cache对象保存在 Configuration 中，可以跨 SqlSession 共享
         // 缓存通过 TransactionalCacheManager, TransactionalCache 管理
         @SuppressWarnings("unchecked")
         List<E> list = (List<E>) tcm.getObject(cache, key);

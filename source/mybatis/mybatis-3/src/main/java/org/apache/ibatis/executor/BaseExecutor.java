@@ -153,7 +153,7 @@ public abstract class BaseExecutor implements Executor {
     try {
       // 防止递归查询重复处理缓存
       queryStack++;
-      // 查询一级缓存
+      // 查询一级缓存 SqlSession 级别，一级缓存只能是 PerpetualCache 类
       // ResultHandler 和 ResultSetHandler 的区别
       list = resultHandler == null ? (List<E>) localCache.getObject(key) : null;
       if (list != null) {
