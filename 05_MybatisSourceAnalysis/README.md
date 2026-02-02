@@ -165,6 +165,54 @@ mvn clean install `-DskipTests `-Dcheckstyle.skip=true `-Dpmd.skip=true
 ![Mybatis初始化时的对象关联关系](./imgs/mybatis-init-obj-relation.png)
 
 
+## `mybatis` 源码解析
+
+`mybatis` 执行如下的代码完成初始化，返回一个 `SqlSessionFactory` 对象;
+
+`mybatis` 会经历一个完整的 **配置解析 -> 元数据构建 -> 工厂创建** 流程，其中 `mybatis-config.xml` 配置文件是整个流程的基石。
+
+```java
+InputStream in = Resources.getResourceAsStream("mybatis-config.xml");
+SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(in);
+```
+
+### `XMLConfigBuilder` 配置文件节点加载
+
+`mybatis-config.xml` 文件首先会被解析为 `XMLConfigBuilder` 对象，该对象创建的过程中会同步创建 `Configuration` 对象，此时的 `Configuration` 对象里面的属性都是默认值;
+
+```java
+// org.apache.ibatis.builder.xml.XMLConfigBuilder.java 
+
+  private XMLConfigBuilder(Class<? extends Configuration> configClass, XPathParser parser, String environment,
+      Properties props) {
+    // XMLConfigBuilder 的构造方法中，创建了 Configuration 对象
+    super(newConfig(configClass));
+    ErrorContext.instance().resource("SQL Mapper Configuration");
+    this.configuration.setVariables(props);
+    this.parsed = false;
+    this.environment = environment;
+    this.parser = parser;
+  }
+
+  private static Configuration newConfig(Class<? extends Configuration> configClass) {
+      try {
+          // 当前 3.5.16 版本是通过反射创建 Configuration 对象
+          return configClass.getDeclaredConstructor().newInstance();
+      } catch (Exception ex) {
+          throw new BuilderException("Failed to create a new Configuration instance.", ex);
+      }
+  }
+```
+
+### `XMLConfigBuilder.parse()` 解析入口
+
+
+
+
+
+
+
+
 
 
 ## 缓存
