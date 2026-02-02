@@ -376,6 +376,74 @@ private void settingsElement(Properties props) {
 }
 ```
 
+### `XMLConfigBuilder.loadCustomLogImpl()` 设置日志框架
+
+`mybatis` 内部抽象了一套日志接口 `org.apache.ibatis.logging.Log`，如果想使用自定义的日志框架只需实现这个接口，然后在 `<settings/>` 中设置自定义的日志即可;
+
+```xml
+<!-- mybatis-config.xml -->
+    <settings>
+        <!-- 指定mybatis的日志库 -->
+        <setting name="logImpl" value="org.apache.ibatis.logging.slf4j.Slf4jImpl"/>
+    </settings>
+```
+
+`loadCustomLogImpl()` 方法从 `settings` 中获取日志相关的配置
+
+```java
+// org.apache.ibatis.builder.xml.XMLConfigBuilder.java
+
+  private void loadCustomLogImpl(Properties props) {
+    Class<? extends Log> logImpl = resolveClass(props.getProperty("logImpl"));
+    // 设置自定义的日志实现，设置成功后，后续所有的 mapper 日志均使用该实现
+    configuration.setLogImpl(logImpl);
+  }
+```
+
+如果自定义的日志库有在别名系统中注册，则 `value` 属性直接填别名即可;
+
+```java
+// org.apache.ibatis.type.TypeAliasRegistry.java
+
+public <T> Class<T> resolveAlias(String string) {
+    try {
+        // ...
+        // 全部转小写
+        String key = string.toLowerCase(Locale.ENGLISH);
+        Class<T> value;
+        if (typeAliases.containsKey(key)) {
+            // 如果 value 填写的是别名，则会进入这里获取别名注册的 class
+            value = (Class<T>) typeAliases.get(key);
+        } else {
+            // 否则认为传入的是 class 类路径，需要加载 class 对象
+            value = (Class<T>) Resources.classForName(string);
+        }
+        return value;
+    } catch (ClassNotFoundException e) {
+        throw new TypeException("Could not resolve type alias '" + string + "'.  Cause: " + e, e);
+    }
+}
+```
+
+
+`mybatis` 内部已经完成了常用的日志库的封装，并在 `Configuration` 初始化的时候注册到别名系统中;
+
+```java
+// org.apache.ibatis.session.Configuration.java
+
+public Configuration() {
+    // ...
+    typeAliasRegistry.registerAlias("SLF4J", Slf4jImpl.class);
+    typeAliasRegistry.registerAlias("COMMONS_LOGGING", JakartaCommonsLoggingImpl.class);
+    typeAliasRegistry.registerAlias("LOG4J", Log4jImpl.class);
+    typeAliasRegistry.registerAlias("LOG4J2", Log4j2Impl.class);
+    typeAliasRegistry.registerAlias("JDK_LOGGING", Jdk14LoggingImpl.class);
+    typeAliasRegistry.registerAlias("STDOUT_LOGGING", StdOutImpl.class);
+    typeAliasRegistry.registerAlias("NO_LOGGING", NoLoggingImpl.class);
+    // ...
+}
+```
+
 
 
 
