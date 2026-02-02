@@ -206,8 +206,175 @@ SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(in);
 
 ### `XMLConfigBuilder.parse()` 解析入口
 
+从根节点开始，将 `mybatis-config.xml` 配置文件中的自定义配置解析到 `Configuration` 对象中，每个 `XMLConfigBuilder` 只能调用一次 `parse()` 方法 (幂等性);
 
+```java
+// org.apache.ibatis.builder.xml.XMLConfigBuilder.java
 
+  public Configuration parse() {
+    if (parsed) {
+      throw new BuilderException("Each XMLConfigBuilder can only be used once.");
+    }
+    // parse() 只能调用一次
+    parsed = true;
+    // 从根节点开始解析 mybatis-config.xml 配置文件
+    parseConfiguration(parser.evalNode("/configuration"));
+    return configuration;
+  }
+```
+
+`parse()` 方法内部最终调用的是 `parseConfiguration()` 方法，从配置文件根节点开始解析配置文件
+
+需要注意的是，`mybatis-config.xml` 配置文件中子标签的顺序是要求的，`parseConfiguration()` 按照固定的顺序解析每个子标签。
+
+```java
+// org.apache.ibatis.builder.xml.XMLConfigBuilder.java
+
+  private void parseConfiguration(XNode root) {
+    try {
+      // issue #117 read properties first
+      // 解析 properties 标签
+      propertiesElement(root.evalNode("properties"));
+      // 解析 settings 标签，这里拿到的数据是自定义配置的 settings 属性 （预处理）
+      Properties settings = settingsAsProperties(root.evalNode("settings"));
+      // 读取文件
+      loadCustomVfsImpl(settings);
+      // 日志设置
+      loadCustomLogImpl(settings);
+      // 类型别名设置
+      typeAliasesElement(root.evalNode("typeAliases"));
+      // 插件
+      pluginsElement(root.evalNode("plugins"));
+      // 对象工厂
+      objectFactoryElement(root.evalNode("objectFactory"));
+      // 对象加工
+      objectWrapperFactoryElement(root.evalNode("objectWrapperFactory"));
+      // 反射工具箱
+      reflectorFactoryElement(root.evalNode("reflectorFactory"));
+      // settings 子标签赋值，默认值就是在这里设置的
+      // 这里的主要目的是将 settings 的配置赋值到 configuraion 对象中
+      // 优先使用 settings 中的自定义属性值，如果没有自定义属性，则使用默认值
+      settingsElement(settings);
+      // read it after objectFactory and objectWrapperFactory issue #631
+      // 加载数据源
+      environmentsElement(root.evalNode("environments"));
+      databaseIdProviderElement(root.evalNode("databaseIdProvider"));
+      // 自定义类型处理器 Java 和 jdbc 类型转换
+      typeHandlersElement(root.evalNode("typeHandlers"));
+      // 解析引用的 Mapper 映射器
+      mappersElement(root.evalNode("mappers"));
+    } catch (Exception e) {
+      throw new BuilderException("Error parsing SQL Mapper Configuration. Cause: " + e, e);
+    }
+  }
+
+```
+
+### `XMLConfigBuilder.propertiesElement()` 解析自定义键值对
+
+`mybatis-config.xml` 配置文件中，可以将常用的配置通过自定义键值对的形式定义，键值对定义的位置如下:
+
+1. `XMLConfigBuilder` 构造函数动态传入 `Properties` 对象: ;
+```java
+// org.apache.ibatis.builder.xml.XMLConfigBuilder.java
+
+public XMLConfigBuilder(Reader reader, String environment, Properties props) {
+    this(Configuration.class, reader, environment, props);
+}
+```
+
+2. 自定义 `*.properties` 文件导入
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <!--
+        导入 jdbc.properties 配置文件，后续可以在当前文件使用使用 ${key} 的方式读取配置数据
+    -->
+    <properties resource="jdbc.properties"/>
+</configuration> 
+```
+
+3. 通过内联子标签定义
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <properties resource="jdbc.properties">
+        <!-- 如果 resource/url 对应文件的 key/value 和当前文件配置的冲突了，则以 resource/url 文件中的为准 -->
+        <property name="jdbc.username" value="admin"/>
+        <property name="jdbc.password" value="123"/>
+    </properties>
+</configuration>
+```
+自定义的键值对在后续的配置文件中使用 `${key}` 占位符的形式引入自定义配置的属性值;
+
+上述三种方式，如果定义的 `key` 重复了，则按照 **构造函数传入 > `*.properties`配置文件导入 > 内联定义** 的优先级覆盖对应的 `key`
+
+```java
+// org.apache.ibatis.builder.xml.XMLConfigBuilder.java
+
+  private void propertiesElement(XNode context) throws Exception {
+    if (context == null) {
+      // properties 属性可以为空
+      return;
+    }
+    // 读取内联配置
+    Properties defaults = context.getChildrenAsProperties();
+    // <properties resource="jdbc.properties"/>
+    String resource = context.getStringAttribute("resource");
+    // <properties url="http://xxxx"/>
+    String url = context.getStringAttribute("url");
+    if (resource != null && url != null) {
+      // properties 不能同时配置 resource 和 url 属性
+      throw new BuilderException(
+          "The properties element cannot specify both a URL and a resource based property file reference.  Please specify one or the other.");
+    }
+    // 如果外部配置文件的 key 和 内联属性的 key 冲突，则会使用外部配置文件的 key-value 覆盖掉内联配置的 key-value
+    if (resource != null) {
+      // 从 properties 文件中加载配置属性
+      defaults.putAll(Resources.getResourceAsProperties(resource));
+    } else if (url != null) {
+      // 从 url 中加载 properties 属性
+      defaults.putAll(Resources.getUrlAsProperties(url));
+    }
+    Properties vars = configuration.getVariables();
+    if (vars != null) {
+      // var != null 表示有从java代码传递属性进来，new SqlSessionFactoryBuilder().build(inputStream, props);
+      // 合并 java 代码传递进来的 properties 属性，通过 Java 代码配置的属性优先级最高
+      defaults.putAll(vars);
+    }
+    // 更新属性信息，用于后续 XML 占位符属性值的替换
+    parser.setVariables(defaults);
+    // 保存属性到 configuration 对象中
+    configuration.setVariables(defaults);
+  }
+```
+
+### `<settings/>` 自定义属性处理
+
+`<settings/>` 标签处理分为两个阶段
+1. `XMLConfigBuilder.settingsAsProperties()` 读取自定义属性并校验合法性(`key`在`Configuration`有对应的 `Setter`);
+2. `XMLConfigBuilder.settingsElement()` 将自定义属性合并到系统默认的属性配置;
+
+```java
+// org.apache.ibatis.builder.xml.XMLConfigBuilder.java
+
+private void settingsElement(Properties props) {
+    configuration
+            .setAutoMappingBehavior(AutoMappingBehavior.valueOf(props.getProperty("autoMappingBehavior", "PARTIAL")));
+    configuration.setAutoMappingUnknownColumnBehavior(
+            AutoMappingUnknownColumnBehavior.valueOf(props.getProperty("autoMappingUnknownColumnBehavior", "NONE")));
+    // 配置文件的缓存默认开启，默认是开启的
+    configuration.setCacheEnabled(booleanValueOf(props.getProperty("cacheEnabled"), true));
+    configuration.setProxyFactory((ProxyFactory) createInstance(props.getProperty("proxyFactory")));
+    // ....
+}
+```
 
 
 

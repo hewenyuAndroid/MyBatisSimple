@@ -292,7 +292,7 @@ public class XMLConfigBuilder extends BaseBuilder {
     }
     // 更新属性信息，用于后续 XML 占位符属性值的替换
     parser.setVariables(defaults);
-    // 保存属性到 configuraion 对象中
+    // 保存属性到 configuration 对象中
     configuration.setVariables(defaults);
   }
 
