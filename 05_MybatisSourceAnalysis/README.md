@@ -445,8 +445,98 @@ public Configuration() {
 ```
 
 
+### `XMLConfigBuilder.typeAliasesElement()` 设置类型别名
 
+`Mybatis` 提供了一套别名的机制，使得 `mapper.xml` 映射文件中可以直接使用别名替代 `Java` 类的全限定名(例如: `com.example.dto.User` -> `user`);
 
+`MyBatis` 在注册和使用别名时，内部统一将别名转换为小写（`toLowerCase(Locale.ENGLISH)`），因此在 XML 中无论写 `User`、`USER` 还是 `user`，最终都映射到同一个小写 `key` 。
+
+`Mybatis` 中所有的别名都被注册到 `TypeAliasRegistry.typeAliases` 中，`TypeAliasRegistry` 在初始化的时候已经为基础类型的数据注册了别名。
+
+```java
+// org.apache.ibatis.type.TypeAliasRegistry
+
+public class TypeAliasRegistry {
+
+    private final Map<String, Class<?>> typeAliases = new HashMap<>();
+
+    public TypeAliasRegistry() {
+        registerAlias("string", String.class);
+
+        registerAlias("byte", Byte.class);
+        registerAlias("char", Character.class);
+        registerAlias("character", Character.class);
+        // ...
+        registerAlias("byte[]", Byte[].class);
+        registerAlias("char[]", Character[].class);
+        // ...
+        registerAlias("_byte", byte.class);
+        registerAlias("_char", char.class);
+        registerAlias("_character", char.class);
+        // ...
+    }
+    // ...
+    public void registerAlias(String alias, Class<?> value) {
+        // 别名统一转小写  TypeAliasRegistry -> typealiasregistry
+        String key = alias.toLowerCase(Locale.ENGLISH);
+        if (typeAliases.containsKey(key) && typeAliases.get(key) != null && !typeAliases.get(key).equals(value)) {
+            // 别名不能重复，key-value 相同时，支持重复注册
+            throw new TypeException(
+                    "The alias '" + alias + "' is already mapped to the value '" + typeAliases.get(key).getName() + "'.");
+        }
+        // 缓存别名和类型的映射关系
+        typeAliases.put(key, value);
+    }
+    // ...
+}
+```
+
+自定义别名怎么使用:
+
+> step1 在 `mybatis-config.xml` 配置文件中设置别名
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <typeAliases>
+        <!-- 方式1: 配置单个类的别名 -->
+        <typeAlias type="com.example.mybatis.pojo.User" alias="user"/>
+        <!-- 方式2: 配置包扫描 -->
+        <package name="com.example.mybatis.pojo"/>
+    </typeAliases>
+</configuration>
+```
+
+使用 `<package/>` 包扫描的方式扫描 `pojo` 时，对应类的默认别名是 `Class.simpleName()` 的小写作为别名 (例如: `com.example.pojo.User` -> `user`)，如果需要自定义设置别名，可以在目标类上添加 `@Alias()` 注解，配置自定义的别名，用法如下: 
+
+```java
+import org.apache.ibatis.type.Alias;
+
+@Alias("abc")
+public class User {
+    // ...
+}
+```
+
+> step2 在 `mapper.xml` 配置文件中使用别名
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.mybatis.mapper.UserMapper">
+    <!-- 这里的 resultType="user" 用的就是别名 -->
+    <select id="selectAll" resultType="user">
+        select * from t_user
+    </select>
+
+</mapper>
+```
 
 
 
