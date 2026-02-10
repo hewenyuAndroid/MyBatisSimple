@@ -45,6 +45,12 @@
         <package name="com.example.mybatis.pojo"/>
     </typeAliases>
 
+    <plugins>
+        <plugin interceptor="com.example.mybatis.interceptor.SQLCostTimeLogInterceptor">
+            <property name="test" value="testValue"/>
+        </plugin>
+    </plugins>
+    
     <!--
         environments 标签配置连接数据库的环境
         default 属性配置默认使用的环境 ( 取值为 environment 的 id 值 )

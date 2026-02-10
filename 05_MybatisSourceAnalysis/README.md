@@ -444,7 +444,6 @@ public Configuration() {
 }
 ```
 
-
 ### `XMLConfigBuilder.typeAliasesElement()` 设置类型别名
 
 `Mybatis` 提供了一套别名的机制，使得 `mapper.xml` 映射文件中可以直接使用别名替代 `Java` 类的全限定名(例如: `com.example.dto.User` -> `user`);
@@ -536,6 +535,211 @@ public class User {
     </select>
 
 </mapper>
+```
+
+### `XMLConfigBuilder.pluginsElement()` 插件注册和使用
+
+`Mybatis` 提供了一套 插件机制 (`plugin`)，允许开发者通过实现 `org.apache.ibatis.plugin.Interceptor` 接口，拦截并增加 `Mybatis` 核心组件的方法调用。插件机制为 `Mybatis` 提供了强大的扩展能力，例如: `SQL` 日志、分页、性能监控、`SQL`改写等;
+
+```java
+// org.apache.ibatis.builder.xml.XMLConfigBuilder
+
+  private void pluginsElement(XNode context) throws Exception {
+    if (context != null) {
+      for (XNode child : context.getChildren()) {
+        String interceptor = child.getStringAttribute("interceptor");
+        Properties properties = child.getChildrenAsProperties();
+        // 反射创建 Interceptor 实例
+        Interceptor interceptorInstance = (Interceptor) resolveClass(interceptor).getDeclaredConstructor()
+            .newInstance();
+        // 注入属性
+        interceptorInstance.setProperties(properties);
+        // 注册插件到 Configuration
+        configuration.addInterceptor(interceptorInstance);
+      }
+    }
+  }
+```
+
+`org.apache.ibatis.plugin.Interceptor` 接口
+
+```java
+public interface Interceptor {
+    // 动态代理对象判断是目标拦截的方法时，调用该方法
+    // 该方法在 SqlSession 执行 crud 过程中执行
+    Object intercept(Invocation invocation) throws Throwable;
+    
+    // 如果配置了插件，则 Executor、StatementHandler、ParameterHandler、ResultSetHandler 对象创建时会调用该方法，创建对应的动态代理对象
+    // 该方法在 SqlSession 对象创建过程中执行
+    default Object plugin(Object target) {
+        return Plugin.wrap(target, this);
+    }
+    
+    // 在 Interceptor 对象创建完成后，立即执行，用于注入 <plugin/> 标签下的自定义属性
+    // 该方法在 mybatis-config.xml 配置文件解析过程中执行
+    default void setProperties(Properties properties) {
+        // NOP
+    }
+}
+```
+
+#### 插件作用的位置
+
+`Mybatis` 插件只能作用在 `Executor`、`StatementHandler`、`ParameterHandler`、`ResultSetHandler` 四个组件。
+
+`interceptorChain.pluginAll()` 返回一个目标对象的动态代理对象，后续拦截操作通过动态代理实现; 
+
+```java
+// org.apache.ibatis.session.Configuration
+
+    public ParameterHandler newParameterHandler(MappedStatement mappedStatement, Object parameterObject,
+                                                BoundSql boundSql) {
+        ParameterHandler parameterHandler = mappedStatement.getLang().createParameterHandler(mappedStatement,
+                parameterObject, boundSql);
+        // 如果配置了插件，这里返回的是 ParameterHandler 的动态代理对象
+        return (ParameterHandler) interceptorChain.pluginAll(parameterHandler);
+    }
+    
+    public ResultSetHandler newResultSetHandler(Executor executor, MappedStatement mappedStatement, RowBounds rowBounds,
+                                                ParameterHandler parameterHandler, ResultHandler resultHandler, BoundSql boundSql) {
+        ResultSetHandler resultSetHandler = new DefaultResultSetHandler(executor, mappedStatement, parameterHandler,
+                resultHandler, boundSql, rowBounds);
+        // 如果配置了插件，这里返回的是 ResultSetHandler 的动态代理对象
+        return (ResultSetHandler) interceptorChain.pluginAll(resultSetHandler);
+    }
+    
+    public StatementHandler newStatementHandler(Executor executor, MappedStatement mappedStatement,
+                                                Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) {
+        StatementHandler statementHandler = new RoutingStatementHandler(executor, mappedStatement, parameterObject,
+                rowBounds, resultHandler, boundSql);
+        // 如果配置了插件，这里返回的是 StatementHandler 的动态代理对象
+        return (StatementHandler) interceptorChain.pluginAll(statementHandler);
+    }
+    
+    public Executor newExecutor(Transaction transaction, ExecutorType executorType) {
+        executorType = executorType == null ? defaultExecutorType : executorType;
+        Executor executor;
+        // ...
+        // 植入插件的逻辑，如果配置了插件，这里返回的是 executor 的动态代理对象
+        return (Executor) interceptorChain.pluginAll(executor);
+    }
+```
+
+#### 插件的动态代理对象如何判断是否需要拦截方法
+
+`Mybatis` 中的 `Plugin` 类实现了 `InvocationHandler` 接口，插件的增强功就是在这个类内部实现的。
+
+```java
+// org.apache.ibatis.plugin.Plugin
+
+public class Plugin implements InvocationHandler {
+    // ...
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        try {
+            // 获取插件配置的方法列表，如果当前方法配置了，则走代理流程，否则正常执行
+            Set<Method> methods = signatureMap.get(method.getDeclaringClass());
+            if (methods != null && methods.contains(method)) {
+                // 走插件的拦截逻辑
+                return interceptor.intercept(new Invocation(target, method, args));
+            }
+            // 走正常的方法调用流程
+            return method.invoke(target, args);
+        } catch (Exception e) {
+            throw ExceptionUtil.unwrapThrowable(e);
+        }
+    }
+    // ...
+}
+```
+
+> `signatureMap` 中注册的方法列表是哪里来的?
+
+`Interceptor` 接口中的 `plugin()` 方法有个默认实现，通过 `Plugin.wrap(target, this);` 返回一个动态代理对象
+
+```java
+// org.apache.ibatis.plugin.Plugin
+
+    public static Object wrap(Object target, Interceptor interceptor) {
+        Map<Class<?>, Set<Method>> signatureMap = getSignatureMap(interceptor);
+        Class<?> type = target.getClass();
+        Class<?>[] interfaces = getAllInterfaces(type, signatureMap);
+        if (interfaces.length > 0) {
+            return Proxy.newProxyInstance(type.getClassLoader(), interfaces, new Plugin(target, interceptor, signatureMap));
+        }
+        return target;
+    }
+
+    private static Map<Class<?>, Set<Method>> getSignatureMap(Interceptor interceptor) {
+        Intercepts interceptsAnnotation = interceptor.getClass().getAnnotation(Intercepts.class);
+        // Interceptor 实现类必须标注 @Intercepts 注解
+        if (interceptsAnnotation == null) {
+            throw new PluginException(
+                    "No @Intercepts annotation was found in interceptor " + interceptor.getClass().getName());
+        }
+        // 获取得到所有的 Signature 数组
+        Signature[] sigs = interceptsAnnotation.value();
+        Map<Class<?>, Set<Method>> signatureMap = new HashMap<>();
+        for (Signature sig : sigs) {
+            Set<Method> methods = MapUtil.computeIfAbsent(signatureMap, sig.type(), k -> new HashSet<>());
+            try {
+                // 根据方法的名称和参数，获取对应方法的签名
+                Method method = sig.type().getMethod(sig.method(), sig.args());
+                methods.add(method);
+            } catch (NoSuchMethodException e) {
+               // ...
+            }
+        }
+        return signatureMap;
+    }
+```
+
+> 拦截器中的注解 `@Intercepts` 和 `@Sigature`
+
+``` java
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE})
+public @interface Intercepts {
+    // 返回当前拦截器需要生效的方法列表
+    Signature[] value();
+}
+
+public @interface Signature {
+    // 标记当前拦截器生效类的 Class，注意，这里只能是 Executor.class、StatementHandler.class、ParameterHandler.class 和 ResultSetHandler.class
+    Class<?> type();
+    // 拦截目标类中的方法名称
+    String method();
+    // 需要拦截的方法的参数列表，方法名称+参数列表 定位唯一的一个方法
+    Class<?>[] args();
+}
+```
+
+#### 自定义一个拦截器
+
+> step1 自定义一个插件类，实现 Interceptor 接口
+
+自定义一个 `SQL` 查询方法的耗时拦截器 [SQLCostTimeLogInterceptor](./src/main/java/com/example/mybatis/interceptor/SQLCostTimeLogInterceptor.java)
+
+> step2 在 `mybatis-config.xml` 中配置插件
+
+```xml
+    <plugins>
+        <plugin interceptor="com.example.mybatis.interceptor.SQLCostTimeLogInterceptor">
+            <property name="test" value="testValue"/>
+        </plugin>
+    </plugins>
+```
+
+> step3 执行查询方法，得到如下日志
+
+```text
+SQLLogInterceptor: setProperties, {test=testValue}
+SQLLogInterceptor: before invoke method=query, beginTime=1770791416491
+DEBUG 02-11 14:30:17,442 ==>  Preparing: select * from t_user  (BaseJdbcLogger.java:135) 
+DEBUG 02-11 14:30:17,493 ==> Parameters:   (BaseJdbcLogger.java:135) 
+DEBUG 02-11 14:30:17,575 <==      Total: 9  (BaseJdbcLogger.java:135) 
+SQLLogInterceptor: after invoke method=query, endTime=1770791417575, costTime=1084ms
 ```
 
 

@@ -704,6 +704,7 @@ public class Configuration {
       BoundSql boundSql) {
     ParameterHandler parameterHandler = mappedStatement.getLang().createParameterHandler(mappedStatement,
         parameterObject, boundSql);
+    // 如果配置了插件，这里返回的是 ParameterHandler 的动态代理对象
     return (ParameterHandler) interceptorChain.pluginAll(parameterHandler);
   }
 
@@ -711,6 +712,7 @@ public class Configuration {
       ParameterHandler parameterHandler, ResultHandler resultHandler, BoundSql boundSql) {
     ResultSetHandler resultSetHandler = new DefaultResultSetHandler(executor, mappedStatement, parameterHandler,
         resultHandler, boundSql, rowBounds);
+    // 如果配置了插件，这里返回的是 ResultSetHandler 的动态代理对象
     return (ResultSetHandler) interceptorChain.pluginAll(resultSetHandler);
   }
 
@@ -718,6 +720,7 @@ public class Configuration {
       Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) {
     StatementHandler statementHandler = new RoutingStatementHandler(executor, mappedStatement, parameterObject,
         rowBounds, resultHandler, boundSql);
+    // 如果配置了插件，这里返回的是 StatementHandler 的动态代理对象
     return (StatementHandler) interceptorChain.pluginAll(statementHandler);
   }
 
@@ -742,7 +745,7 @@ public class Configuration {
     if (cacheEnabled) {
       executor = new CachingExecutor(executor);
     }
-    // 植入插件的逻辑
+    // 植入插件的逻辑，如果配置了插件，这里返回的是 executor 的动态代理对象
     return (Executor) interceptorChain.pluginAll(executor);
   }
 
