@@ -742,6 +742,42 @@ DEBUG 02-11 14:30:17,575 <==      Total: 9  (BaseJdbcLogger.java:135)
 SQLLogInterceptor: after invoke method=query, endTime=1770791417575, costTime=1084ms
 ```
 
+### `XMLConfigBuilder.objectFactoryElement()` 自定义对象工厂解析
+
+`Mybatis` 将数据库查询结果映射成 Java 对象时，需要创建目标类的实例。默认情况下，它通过 反射调用无参构造函数完成。使用 `ObjectFactory` 允许使用自定义对象的创建逻辑;
+
+- 自定义实体类 (例如: `User`) 的实例化方式;
+- 支持有参构造函数;
+- 与 IOC 容器集成，实现依赖注入;
+- 在对象创建时执行初始化逻辑。
+
+`Mybatis` 默认使用 `DefaultObjectFactory` 创建对象实例
+
+```java
+public class Configuration {
+    // ...
+    // Configuration 类默认创建的对象实例化工厂
+    protected ObjectFactory objectFactory = new DefaultObjectFactory();
+    // ...
+}
+```
+
+如果配置了自定义对象工厂，则在 配置文件解析时，将对象工厂替换成自定义的工厂对象;
+
+```java
+// org.apache.ibatis.builder.xml.XMLConfigBuilder
+
+  private void objectFactoryElement(XNode context) throws Exception {
+    if (context != null) {
+      String type = context.getStringAttribute("type");
+      Properties properties = context.getChildrenAsProperties();
+      ObjectFactory factory = (ObjectFactory) resolveClass(type).getDeclaredConstructor().newInstance();
+      factory.setProperties(properties);
+      // 设置自定义对象工厂
+      configuration.setObjectFactory(factory);
+    }
+  }
+```
 
 
 ## 缓存
