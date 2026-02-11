@@ -779,6 +779,15 @@ public class Configuration {
   }
 ```
 
+### `XMLConfigBuilder.typeHandlersElement()` 类型转换解析
+
+`Mybatis` 在执行 `SQL`时，需要在 Java类型(`String`, `LocalDateTime`, 枚举类等) 和 JDBC类型(`varchar`, `TIMESTAMP`) 之间进行转换。
+
+- 参数设置阶段: Java对象 -> JDBC类型 (调用 `ParameterHandler.setXXX()`)
+- 结果映射阶段: JDBC类型 -> Java对象 (调用 `ResultSetHandler.getXXX()`)
+
+这个转换过程由 `TypeHandler` 类型处理器 完成。
+
 
 ## 缓存
 
