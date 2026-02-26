@@ -444,6 +444,98 @@ public Configuration() {
 }
 ```
 
+#### 日志库是如何生效的
+
+`Mybatis` 内部定义了一套自己的日志接口，通过适配器模式适配三方的日志库框架，`mybatis-config.xml` 配置文件解析时，如果配置了日志库，则会创建对应的日志实例对象。
+
+```java
+package org.apache.ibatis.logging;
+
+public interface Log {
+    // 是否开启debug日志
+    boolean isDebugEnabled();
+
+    boolean isTraceEnabled();
+
+    void error(String s, Throwable e);
+
+    void error(String s);
+
+    void debug(String s);
+
+    void trace(String s);
+
+    void warn(String s);
+}
+```
+
+`Mybatis` 中如果开启了日志打印功能，则 `Connection`、`PreparedStatement`、`Statement`、`ResultSet` 四个对象都会通过动态代理的方式替换掉原有的对象
+
+- `Connection` --> `org.apache.ibatis.logging.jdbc.ConnectionLogger`
+- `PreparedStatement` --> `org.apache.ibatis.logging.jdbc.PreparedStatementLogger`
+- `Statement` --> `org.apache.ibatis.logging.jdbc.StatementLogger`
+- `ResultSet` --> `org.apache.ibatis.logging.jdbc.ResultSetLogger`
+
+在执行器中获取连接时，如果开启了日志打印功能，会返回 `Connection` 的代理对象:
+
+```java
+// org.apache.ibatis.executor.BaseExecutor
+
+protected Connection getConnection(Log statementLog) throws SQLException {
+    Connection connection = transaction.getConnection();
+    if (statementLog.isDebugEnabled()) {
+        // 如果开启了日志打印功能，则返回 Connection 的代理对象
+        return ConnectionLogger.newInstance(connection, statementLog, queryStack);
+    }
+    return connection;
+}
+```
+
+`Connection` 的代理对象在执行 `Statement`、`PrepareStetment` 对象时，同样会判断是否开启了日志打印来控制是否创建其动态代理对象
+
+```java
+// org.apache.ibatis.logging.jdbc.ConnectionLogger
+
+// ConnectionLogger 类实现了 InvocationHandler 接口
+public final class ConnectionLogger extends BaseJdbcLogger implements InvocationHandler {
+    // 被代理的原始对象
+    private final Connection connection;
+    // ...
+    
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] params) throws Throwable {
+        try {
+            if (Object.class.equals(method.getDeclaringClass())) {
+                // 如果时 Object 的方法则直接执行
+                return method.invoke(this, params);
+            }
+            if ("prepareStatement".equals(method.getName()) || "prepareCall".equals(method.getName())) {
+                // 拦截掉 prepareStatement 和 prepareCall 方法
+                if (isDebugEnabled()) {
+                    // 打印日志
+                    debug(" Preparing: " + removeExtraWhitespace((String) params[0]), true);
+                }
+                // 先调用被代理的 Connection 对象，创建出 PreparedStatement
+                PreparedStatement stmt = (PreparedStatement) method.invoke(connection, params);
+                // 为 PreparedStatement 对象创建动态代理对象
+                return PreparedStatementLogger.newInstance(stmt, statementLog, queryStack);
+            }
+            if ("createStatement".equals(method.getName())) {
+                // createStatement 方法也是同样的方式拦截并创建代理对象返回
+                Statement stmt = (Statement) method.invoke(connection, params);
+                return StatementLogger.newInstance(stmt, statementLog, queryStack);
+            }
+            return method.invoke(connection, params);
+        } catch (Throwable t) {
+            throw ExceptionUtil.unwrapThrowable(t);
+        }
+    }
+    
+    // ...
+}
+```
+
+
 ### `XMLConfigBuilder.typeAliasesElement()` 设置类型别名
 
 `Mybatis` 提供了一套别名的机制，使得 `mapper.xml` 映射文件中可以直接使用别名替代 `Java` 类的全限定名(例如: `com.example.dto.User` -> `user`);
