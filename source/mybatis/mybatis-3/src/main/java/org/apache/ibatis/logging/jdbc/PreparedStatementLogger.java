@@ -46,12 +46,15 @@ public final class PreparedStatementLogger extends BaseJdbcLogger implements Inv
       if (Object.class.equals(method.getDeclaringClass())) {
         return method.invoke(this, params);
       }
+      // 如果是通过 ConnectionProxy 创建的 PreparedStatement 代理对象，执行对应的方法会走这里被拦截
       if (EXECUTE_METHODS.contains(method.getName())) {
         if (isDebugEnabled()) {
+          // 打印参数日志
           debug("Parameters: " + getParameterValueString(), true);
         }
         clearColumnInfo();
         if ("executeQuery".equals(method.getName())) {
+          // 如果是查询方法，返回 ResultSet 的代理对象
           ResultSet rs = (ResultSet) method.invoke(statement, params);
           return rs == null ? null : ResultSetLogger.newInstance(rs, statementLog, queryStack);
         } else {

@@ -358,6 +358,7 @@ public abstract class BaseExecutor implements Executor {
   protected Connection getConnection(Log statementLog) throws SQLException {
     Connection connection = transaction.getConnection();
     if (statementLog.isDebugEnabled()) {
+      // 如果开启了日志打印功能，则返回的连接对象为 Connection 的动态代理对象
       return ConnectionLogger.newInstance(connection, statementLog, queryStack);
     }
     return connection;
